@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "tool": "security-scanner",
+    "version": "1.0.0",
+    "url": "https://dashboard.waldoclick.dev",
+    "hostname": "dashboard.waldoclick.dev",
+    "scheme": "https",
+    "scan_date": "2026-03-15T23:37:50.371055+00:00",
+    "modules_run": [
+      "headers"
+    ],
+    "output_file": "dashboard.waldoclick.dev_headers_check.json"
+  },
+  "risk_summary": {
+    "score": 21,
+    "risk_level": "medium",
+    "issue_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 5,
+      "low": 1,
+      "info": 0
+    },
+    "total_issues": 6
+  },
+  "all_issues": [
+    {
+      "severity": "medium",
+      "header": "permissions-policy",
+      "message": "Missing security header: Permissions-Policy (formerly Feature-Policy)",
+      "recommendation": "Restrict browser features with Permissions-Policy header.",
+      "source_module": "http_headers"
+    },
+    {
+      "severity": "medium",
+      "header": "cache-control",
+      "message": "Missing security header: Cache-Control",
+      "recommendation": "For sensitive pages, use: Cache-Control: no-store",
+      "source_module": "http_headers"
+    },
+    {
+      "severity": "medium",
+      "header": "cross-origin-embedder-policy",
+      "message": "Missing security header: Cross-Origin-Embedder-Policy (COEP)",
+      "recommendation": "Add: Cross-Origin-Embedder-Policy: require-corp",
+      "source_module": "http_headers"
+    },
+    {
+      "severity": "medium",
+      "header": "cross-origin-opener-policy",
+      "message": "Missing security header: Cross-Origin-Opener-Policy (COOP)",
+      "recommendation": "Add: Cross-Origin-Opener-Policy: same-origin",
+      "source_module": "http_headers"
+    },
+    {
+      "severity": "medium",
+      "header": "cross-origin-resource-policy",
+      "message": "Missing security header: Cross-Origin-Resource-Policy (CORP)",
+      "recommendation": "Add: Cross-Origin-Resource-Policy: same-origin",
+      "source_module": "http_headers"
+    },
+    {
+      "severity": "low",
+      "header": "server",
+      "message": "Information disclosure via 'server' header: cloudflare",
+      "recommendation": "Remove or obscure the 'server' header. Exposes server software and version, aiding fingerprinting.",
+      "source_module": "http_headers"
+    }
+  ],
+  "modules": {
+    "http_headers": {
+      "module": "http_headers",
+      "url": "https://dashboard.waldoclick.dev",
+      "status_code": 200,
+      "redirect_chain": [
+        {
+          "url": "https://dashboard.waldoclick.dev/",
+          "status_code": 302
+        }
+      ],
+      "security_headers": {
+        "strict-transport-security": {
+          "present": true,
+          "value": "max-age=31536000; includeSubDomains",
+          "description": "HTTP Strict Transport Security (HSTS)"
+        },
+        "content-security-policy": {
+          "present": true,
+          "value": "frame-ancestors 'none'; connect-src 'self' http://127.0.0.1:*; default-src https: 'unsafe-inline'",
+          "description": "Content Security Policy (CSP)"
+        },
+        "x-frame-options": {
+          "present": true,
+          "value": "DENY",
+          "description": "X-Frame-Options (Clickjacking protection)"
+        },
+        "x-content-type-options": {
+          "present": true,
+          "value": "nosniff",
+          "description": "X-Content-Type-Options (MIME sniffing protection)"
+        },
+        "referrer-policy": {
+          "present": true,
+          "value": "strict-origin-when-cross-origin",
+          "description": "Referrer-Policy"
+        },
+        "permissions-policy": {
+          "present": false,
+          "value": null,
+          "description": "Permissions-Policy (formerly Feature-Policy)",
+          "recommendation": "Restrict browser features with Permissions-Policy header."
+        },
+        "x-xss-protection": {
+          "present": true,
+          "value": "1; mode=block",
+          "description": "X-XSS-Protection (legacy XSS filter)"
+        },
+        "cache-control": {
+          "present": false,
+          "value": null,
+          "description": "Cache-Control",
+          "recommendation": "For sensitive pages, use: Cache-Control: no-store"
+        },
+        "cross-origin-embedder-policy": {
+          "present": false,
+          "value": null,
+          "description": "Cross-Origin-Embedder-Policy (COEP)",
+          "recommendation": "Add: Cross-Origin-Embedder-Policy: require-corp"
+        },
+        "cross-origin-opener-policy": {
+          "present": false,
+          "value": null,
+          "description": "Cross-Origin-Opener-Policy (COOP)",
+          "recommendation": "Add: Cross-Origin-Opener-Policy: same-origin"
+        },
+        "cross-origin-resource-policy": {
+          "present": false,
+          "value": null,
+          "description": "Cross-Origin-Resource-Policy (CORP)",
+          "recommendation": "Add: Cross-Origin-Resource-Policy: same-origin"
+        }
+      },
+      "missing_headers": [
+        "permissions-policy",
+        "cache-control",
+        "cross-origin-embedder-policy",
+        "cross-origin-opener-policy",
+        "cross-origin-resource-policy"
+      ],
+      "dangerous_headers": {
+        "server": {
+          "value": "cloudflare",
+          "reason": "Exposes server software and version, aiding fingerprinting."
+        }
+      },
+      "score": 6,
+      "max_score": 11,
+      "issues": [
+        {
+          "severity": "medium",
+          "header": "permissions-policy",
+          "message": "Missing security header: Permissions-Policy (formerly Feature-Policy)",
+          "recommendation": "Restrict browser features with Permissions-Policy header."
+        },
+        {
+          "severity": "medium",
+          "header": "cache-control",
+          "message": "Missing security header: Cache-Control",
+          "recommendation": "For sensitive pages, use: Cache-Control: no-store"
+        },
+        {
+          "severity": "medium",
+          "header": "cross-origin-embedder-policy",
+          "message": "Missing security header: Cross-Origin-Embedder-Policy (COEP)",
+          "recommendation": "Add: Cross-Origin-Embedder-Policy: require-corp"
+        },
+        {
+          "severity": "medium",
+          "header": "cross-origin-opener-policy",
+          "message": "Missing security header: Cross-Origin-Opener-Policy (COOP)",
+          "recommendation": "Add: Cross-Origin-Opener-Policy: same-origin"
+        },
+        {
+          "severity": "medium",
+          "header": "cross-origin-resource-policy",
+          "message": "Missing security header: Cross-Origin-Resource-Policy (CORP)",
+          "recommendation": "Add: Cross-Origin-Resource-Policy: same-origin"
+        },
+        {
+          "severity": "low",
+          "header": "server",
+          "message": "Information disclosure via 'server' header: cloudflare",
+          "recommendation": "Remove or obscure the 'server' header. Exposes server software and version, aiding fingerprinting."
+        }
+      ],
+      "error": null,
+      "duration_seconds": 1.38
+    },
+    "ssl_tls": null,
+    "dns": null,
+    "port_scan": null,
+    "technologies": null,
+    "vulnerabilities": null
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "tool": "security-scanner",
+    "version": "1.0.0",
+    "url": "https://waldo.click",
+    "hostname": "waldo.click",
+    "scheme": "https",
+    "scan_date": "2026-03-15T23:35:10.392501+00:00",
+    "modules_run": [
+      "headers"
+    ],
+    "output_file": "waldo.click_headers_check.json"
+  },
+  "risk_summary": {
+    "score": 5,
+    "risk_level": "low",
+    "issue_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 0
+    },
+    "total_issues": 2
+  },
+  "all_issues": [
+    {
+      "severity": "medium",
+      "header": "cache-control",
+      "message": "Missing security header: Cache-Control",
+      "recommendation": "For sensitive pages, use: Cache-Control: no-store",
+      "source_module": "http_headers"
+    },
+    {
+      "severity": "low",
+      "header": "server",
+      "message": "Information disclosure via 'server' header: nginx",
+      "recommendation": "Remove or obscure the 'server' header. Exposes server software and version, aiding fingerprinting.",
+      "source_module": "http_headers"
+    }
+  ],
+  "modules": {
+    "http_headers": {
+      "module": "http_headers",
+      "url": "https://waldo.click",
+      "status_code": 200,
+      "redirect_chain": [
+        {
+          "url": "https://waldo.click/",
+          "status_code": 301
+        }
+      ],
+      "security_headers": {
+        "strict-transport-security": {
+          "present": true,
+          "value": "max-age=15552000; includeSubDomains",
+          "description": "HTTP Strict Transport Security (HSTS)"
+        },
+        "content-security-policy": {
+          "present": true,
+          "value": "base-uri 'self'; font-src 'self' https://css.zohocdn.com https://fonts.zohocdn.com https://static.zohocdn.com; form-action 'self' https://webpay3gint.transbank.cl https://webpay3g.transbank.cl; frame-ancestors 'none'; img-src 'self' data: blob: https: https://www.waldo.click https://api.waldo.click https://www.google-analytics.com; object-src 'none'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://css.zohocdn.com; script-src 'self' 'unsafe-inline' https://www.waldo.click https://api.waldo.click https://static.hotjar.com https://script.hotjar.com https://cdn.logrocket.io https://cdn.lr-ingest.io https://cdn.lgrckt-in.com https://*.logrocket.io https://*.lr-ingest.io https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://accounts.google.com https://www.google.com https://www.gstatic.com https://*.sentry.io https://*.ingest.sentry.io https://salesiq.zohopublic.com https://salesiq.zoho.com https://js.zohocdn.com https://css.zohocdn.com https://static.zohocdn.com; upgrade-insecure-requests; default-src 'self'; connect-src 'self' https: wss://*.hotjar.com wss://ws.hotjar.com https://www.waldo.click https://api.waldo.click https://*.logrocket.io https://*.lr-ingest.io https://*.sentry.io https://*.ingest.sentry.io https://www.google-analytics.com https://salesiq.zohopublic.com https://salesiq.zoho.com wss://salesiq.zohopublic.com wss://salesiq.zoho.com https://*.zohocdn.com wss://*.zohocdn.com; frame-src https://accounts.google.com https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://*.zohocdn.com; media-src 'self' https://static.zohocdn.com; child-src 'self' blob:; worker-src 'self' blob:;",
+          "description": "Content Security Policy (CSP)"
+        },
+        "x-frame-options": {
+          "present": true,
+          "value": "SAMEORIGIN, SAMEORIGIN",
+          "description": "X-Frame-Options (Clickjacking protection)"
+        },
+        "x-content-type-options": {
+          "present": true,
+          "value": "nosniff, nosniff",
+          "description": "X-Content-Type-Options (MIME sniffing protection)"
+        },
+        "referrer-policy": {
+          "present": true,
+          "value": "no-referrer",
+          "description": "Referrer-Policy"
+        },
+        "permissions-policy": {
+          "present": true,
+          "value": "camera=(), display-capture=(self), fullscreen=(), geolocation=(), microphone=()",
+          "description": "Permissions-Policy (formerly Feature-Policy)"
+        },
+        "x-xss-protection": {
+          "present": true,
+          "value": "0, 1; mode=block",
+          "description": "X-XSS-Protection (legacy XSS filter)"
+        },
+        "cache-control": {
+          "present": false,
+          "value": null,
+          "description": "Cache-Control",
+          "recommendation": "For sensitive pages, use: Cache-Control: no-store"
+        },
+        "cross-origin-embedder-policy": {
+          "present": true,
+          "value": "credentialless",
+          "description": "Cross-Origin-Embedder-Policy (COEP)"
+        },
+        "cross-origin-opener-policy": {
+          "present": true,
+          "value": "same-origin",
+          "description": "Cross-Origin-Opener-Policy (COOP)"
+        },
+        "cross-origin-resource-policy": {
+          "present": true,
+          "value": "same-origin",
+          "description": "Cross-Origin-Resource-Policy (CORP)"
+        }
+      },
+      "missing_headers": [
+        "cache-control"
+      ],
+      "dangerous_headers": {
+        "server": {
+          "value": "nginx",
+          "reason": "Exposes server software and version, aiding fingerprinting."
+        }
+      },
+      "score": 10,
+      "max_score": 11,
+      "issues": [
+        {
+          "severity": "medium",
+          "header": "cache-control",
+          "message": "Missing security header: Cache-Control",
+          "recommendation": "For sensitive pages, use: Cache-Control: no-store"
+        },
+        {
+          "severity": "low",
+          "header": "server",
+          "message": "Information disclosure via 'server' header: nginx",
+          "recommendation": "Remove or obscure the 'server' header. Exposes server software and version, aiding fingerprinting."
+        }
+      ],
+      "error": null,
+      "duration_seconds": 0.59
+    },
+    "ssl_tls": null,
+    "dns": null,
+    "port_scan": null,
+    "technologies": null,
+    "vulnerabilities": null
+  }
+}
