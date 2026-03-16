@@ -32,27 +32,34 @@ def mock_secrets(monkeypatch):
 
 @pytest.fixture
 def mock_checkdmarc():
-    """Mock checkdmarc.check_domains for testing email auth module."""
+    """Mock checkdmarc.check_domains for testing email auth module.
+    
+    Note: checkdmarc returns a DomainCheckResult dict directly (not nested by domain)
+    when checking a single domain.
+    """
     mock_result = {
-        "waldo.click": {
-            "spf": {
-                "record": "v=spf1 include:mailgun.org ~all",
-                "valid": True,
-                "dns_lookups": 3,
-                "warnings": [],
-                "errors": []
-            },
-            "dkim": {
-                "selectors": {
-                    "default": {"public_key_type": "rsa", "key_size": 2048}
-                }
-            },
-            "dmarc": {
-                "record": "v=DMARC1; p=quarantine; rua=mailto:dmarc@waldo.click",
-                "policy": "quarantine",
-                "pct": 100,
-                "warnings": [],
-                "errors": []
+        "domain": "waldo.click",
+        "base_domain": "waldo.click",
+        "spf": {
+            "record": "v=spf1 include:mailgun.org ~all",
+            "valid": True,
+            "dns_lookups": 3,
+            "warnings": [],
+            "errors": []
+        },
+        "dkim": {
+            "selectors": {
+                "default": {"public_key_type": "rsa", "key_size": 2048}
+            }
+        },
+        "dmarc": {
+            "record": "v=DMARC1; p=quarantine; rua=mailto:dmarc@waldo.click",
+            "valid": True,
+            "warnings": [],
+            "errors": [],
+            "tags": {
+                "p": {"value": "quarantine", "explicit": True},
+                "pct": {"value": 100, "explicit": False}
             }
         }
     }
@@ -65,23 +72,26 @@ def mock_checkdmarc():
 def mock_checkdmarc_with_warnings():
     """Mock checkdmarc with policy warnings (p=none is ineffective)."""
     mock_result = {
-        "example.com": {
-            "spf": {
-                "record": "v=spf1 include:a.com include:b.com include:c.com ~all",
-                "valid": True,
-                "dns_lookups": 9,
-                "warnings": ["SPF record is approaching 10 DNS lookup limit"],
-                "errors": []
-            },
-            "dkim": {
-                "selectors": {}
-            },
-            "dmarc": {
-                "record": "v=DMARC1; p=none; rua=mailto:dmarc@example.com",
-                "policy": "none",
-                "pct": 100,
-                "warnings": ["Policy p=none provides no protection"],
-                "errors": []
+        "domain": "example.com",
+        "base_domain": "example.com",
+        "spf": {
+            "record": "v=spf1 include:a.com include:b.com include:c.com ~all",
+            "valid": True,
+            "dns_lookups": 9,
+            "warnings": ["SPF record is approaching 10 DNS lookup limit"],
+            "errors": []
+        },
+        "dkim": {
+            "selectors": {}
+        },
+        "dmarc": {
+            "record": "v=DMARC1; p=none; rua=mailto:dmarc@example.com",
+            "valid": True,
+            "warnings": ["Policy p=none provides no protection"],
+            "errors": [],
+            "tags": {
+                "p": {"value": "none", "explicit": True},
+                "pct": {"value": 100, "explicit": False}
             }
         }
     }

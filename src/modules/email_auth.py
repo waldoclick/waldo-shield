@@ -54,16 +54,16 @@ def check_email_security(
     }
     
     try:
-        # checkdmarc.check_domains returns dict with domain as key
+        # checkdmarc.check_domains returns DomainCheckResult dict directly for single domain
+        # Pass domain as list for consistent API behavior
         check_result = checkdmarc.check_domains(
-            apex_domain,
+            [apex_domain],
             skip_tls=True,
             timeout=5.0,
-            nameservers=None,  # Use system default
-            include_dmarc_tag_descriptions=False,
         )
         
-        domain_data = check_result.get(apex_domain, {})
+        # For single domain, result is the dict directly (not nested by domain)
+        domain_data = check_result if isinstance(check_result, dict) else {}
         
         # Process SPF
         spf_data = domain_data.get("spf", {})
@@ -108,10 +108,16 @@ def check_email_security(
         
         # Process DMARC
         dmarc_data = domain_data.get("dmarc", {})
+        # Extract policy from tags (new checkdmarc structure)
+        tags = dmarc_data.get("tags", {})
+        policy = tags.get("p", {}).get("value", "") if tags else dmarc_data.get("policy", "")
+        pct = tags.get("pct", {}).get("value", 100) if tags else dmarc_data.get("pct", 100)
+        
         result["dmarc"] = {
             "record": dmarc_data.get("record", ""),
-            "policy": dmarc_data.get("policy", ""),
-            "pct": dmarc_data.get("pct", 100),
+            "policy": policy,
+            "pct": pct,
+            "valid": dmarc_data.get("valid", False),
             "warnings": dmarc_data.get("warnings", []),
             "errors": dmarc_data.get("errors", []),
         }
@@ -131,7 +137,6 @@ def check_email_security(
             })
         
         # Check for ineffective DMARC policy
-        policy = dmarc_data.get("policy", "")
         if policy == "none":
             issues.append({
                 "severity": "warning",
