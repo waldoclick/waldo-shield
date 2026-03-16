@@ -257,3 +257,153 @@ class TestMonitorConfigError:
                 main()
             
             assert exc.value.code == 2
+
+
+class TestCronCompatibility:
+    """Tests verifying cron-compatible behavior."""
+
+    @patch("monitor.Config.load")
+    @patch("monitor.http_scan")
+    @patch("monitor.analyze_domain")
+    @patch("monitor.collect_cloudflare_data")
+    @patch("monitor.load_latest_scan")
+    @patch("monitor.compare_scans")
+    @patch("monitor.generate_report")
+    @patch("monitor.save_scan")
+    @patch("monitor.should_send_email")
+    @patch("monitor.send_report")
+    def test_cron_full_workflow_no_stdin(
+        self,
+        mock_send,
+        mock_should_send,
+        mock_save,
+        mock_gen,
+        mock_compare,
+        mock_load,
+        mock_cf,
+        mock_email,
+        mock_http,
+        mock_config,
+    ):
+        """Full cron workflow should complete without requiring stdin."""
+        from monitor import main
+        
+        # Setup realistic mocks
+        mock_config.return_value = MagicMock(
+            environment="prod",
+            targets=["https://api.waldo.click", "https://dashboard.waldo.click"],
+            recipients=["security@waldo.click"],
+            mailgun_domain="waldo.click",
+            mailgun_api_key="key-abc123",
+            cloudflare_token="cf-token",
+            zone_id="zone-123",
+        )
+        
+        # HTTP scan returns good results
+        mock_http.return_value = {
+            "risk_summary": {"score": 5, "issue_counts": {"critical": 0, "high": 0, "medium": 1}},
+            "all_issues": [{"severity": "medium", "message": "test", "source_module": "headers"}],
+        }
+        
+        # Email auth returns good results
+        mock_email.return_value = {
+            "domain": "waldo.click",
+            "spf": {"valid": True},
+            "dkim": {"selectors": {"default": True}},
+            "dmarc": {"valid": True, "policy": "quarantine"},
+            "issues": [],
+        }
+        
+        # Cloudflare returns operational data
+        mock_cf.return_value = {
+            "security_events": {"total_events": 5},
+            "traffic_analytics": {"total_requests": 1000},
+        }
+        
+        mock_load.return_value = None
+        mock_compare.return_value = None
+        mock_gen.return_value = "<html>Report</html>"
+        mock_save.return_value = Path("/tmp/scan_20260316.json")
+        mock_should_send.return_value = False
+        
+        # Run with cron-compatible flags
+        with patch("sys.argv", ["monitor.py", "--env", "prod", "--quiet"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+            
+            # Should exit 0 (no critical/high issues)
+            assert exc.value.code == 0
+        
+        # Verify complete workflow executed
+        assert mock_config.called
+        assert mock_http.call_count == 2  # Two targets
+        assert mock_email.called
+        assert mock_cf.called
+        assert mock_gen.called
+        assert mock_save.called
+        
+        # Email not sent (below threshold)
+        mock_send.assert_not_called()
+
+    @patch("monitor.Config.load")
+    @patch("monitor.http_scan")
+    @patch("monitor.analyze_domain")
+    @patch("monitor.collect_cloudflare_data")
+    @patch("monitor.load_latest_scan")
+    @patch("monitor.compare_scans")
+    @patch("monitor.generate_report")
+    @patch("monitor.save_scan")
+    @patch("monitor.should_send_email")
+    @patch("monitor.send_report")
+    def test_cron_sends_email_when_critical(
+        self,
+        mock_send,
+        mock_should_send,
+        mock_save,
+        mock_gen,
+        mock_compare,
+        mock_load,
+        mock_cf,
+        mock_email,
+        mock_http,
+        mock_config,
+    ):
+        """Cron job should send email when critical issues found."""
+        from monitor import main
+        
+        mock_config.return_value = MagicMock(
+            environment="prod",
+            targets=["https://api.waldo.click"],
+            recipients=["security@waldo.click"],
+            mailgun_domain="waldo.click",
+            mailgun_api_key="key-abc123",
+            cloudflare_token="cf-token",
+            zone_id="zone-123",
+        )
+        
+        # HTTP scan returns critical issue
+        mock_http.return_value = {
+            "risk_summary": {"score": 50, "issue_counts": {"critical": 1, "high": 0, "medium": 0}},
+            "all_issues": [{"severity": "critical", "message": "SQL injection", "source_module": "vulns"}],
+        }
+        
+        mock_email.return_value = {"domain": "waldo.click", "issues": []}
+        mock_cf.return_value = {"security_events": {"total_events": 0}}
+        mock_load.return_value = None
+        mock_compare.return_value = None
+        mock_gen.return_value = "<html>Alert Report</html>"
+        mock_save.return_value = Path("/tmp/scan.json")
+        mock_should_send.return_value = True
+        mock_send.return_value = {"success": True, "message_id": "test-id"}
+        
+        with patch("sys.argv", ["monitor.py", "--env", "prod", "--quiet"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+            
+            # Should exit 1 (critical issues found)
+            assert exc.value.code == 1
+        
+        # Email should be sent
+        mock_send.assert_called_once()
+        call_args = mock_send.call_args
+        assert "Alert Report" in call_args[0][0]  # HTML content
