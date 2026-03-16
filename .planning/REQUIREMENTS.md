@@ -9,8 +9,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Configuration
 
-- [ ] **CONF-01**: System loads environment-specific config (staging vs prod targets, recipients, thresholds)
-- [ ] **CONF-02**: API tokens read from environment variables, never hardcoded
+- [x] **CONF-01**: System loads environment-specific config (staging vs prod targets, recipients, thresholds)
+- [x] **CONF-02**: API tokens read from environment variables, never hardcoded
 
 ### DNS/Email Checks
 
@@ -79,8 +79,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 | Phase 1 | Pending |
-| CONF-02 | Phase 1 | Pending |
+| CONF-01 | Phase 1 | Complete |
+| CONF-02 | Phase 1 | Complete |
 | DNS-01 | Phase 2 | Pending |
 | DNS-02 | Phase 2 | Pending |
 | DNS-03 | Phase 2 | Pending |
@@ -104,4 +104,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after initial definition*
+*Last updated: 2026-03-16 after completing Phase 1*

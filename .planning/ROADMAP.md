@@ -8,7 +8,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Foundation & Config** - Environment-aware configuration and credential management
+- [x] **Phase 1: Foundation & Config** - Environment-aware configuration and credential management
 - [ ] **Phase 2: Data Collection** - DNS/email checks and Cloudflare API integration
 - [ ] **Phase 3: Report & Delivery** - HTML report generation, email delivery, and cron operations
 
@@ -32,7 +32,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Config module with environment-specific settings and CLI entry point
+- [x] 01-01-PLAN.md — Config module with environment-specific settings and CLI entry point
 
 ---
 
@@ -78,7 +78,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Config | 0/1 | Not started | - |
+| 1. Foundation & Config | 1/1 | Complete | 2026-03-16 |
 | 2. Data Collection | 0/? | Not started | - |
 | 3. Report & Delivery | 0/? | Not started | - |
 
