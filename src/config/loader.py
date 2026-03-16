@@ -25,6 +25,8 @@ class Config:
     codacy_provider: str
     codacy_org: str
     codacy_repo: str
+    websentry_api_key: str
+    report_zip_password: str
     recipients: List[str]
 
     @property
@@ -99,12 +101,21 @@ class Config:
 
         domain = values["DOMAIN"]
         
-        # Derive mailgun domain and recipients from domain
+        # Derive mailgun domain from domain
         mailgun_domain = domain
-        recipients = [f"security@{domain}"]
+        
+        # Recipients from env or default
+        recipients_str = os.environ.get("REPORT_RECIPIENTS", f"security@{domain}")
+        recipients = [r.strip() for r in recipients_str.split(",") if r.strip()]
 
         # Codacy provider defaults to 'gh' (GitHub)
         codacy_provider = os.environ.get("CODACY_PROVIDER", "gh")
+        
+        # WebSentry API key (optional - only needed for websentry collector)
+        websentry_api_key = os.environ.get("WEBSENTRY_API_KEY", "")
+        
+        # ZIP password for report attachments (defaults to domain)
+        report_zip_password = os.environ.get("REPORT_ZIP_PASSWORD") or domain
 
         return cls(
             domain=domain,
@@ -120,5 +131,7 @@ class Config:
             codacy_provider=codacy_provider,
             codacy_org=values["CODACY_ORG"],
             codacy_repo=values["CODACY_REPO"],
+            websentry_api_key=websentry_api_key,
+            report_zip_password=report_zip_password,
             recipients=recipients,
         )

@@ -96,3 +96,56 @@ def send_report(
             return {"error": f"Mailgun API error: {response.status_code} - {response.text}"}
     except requests.RequestException as e:
         return {"error": f"Request failed: {str(e)}"}
+
+
+def send_email(
+    api_key: str,
+    domain: str,
+    to: List[str],
+    subject: str,
+    html: str,
+    attachments: Optional[List[tuple]] = None,
+) -> dict:
+    """Send email with optional attachments via Mailgun API.
+    
+    Args:
+        api_key: Mailgun API key
+        domain: Mailgun sending domain
+        to: List of recipient email addresses
+        subject: Email subject
+        html: HTML body content
+        attachments: Optional list of (filename, bytes) tuples
+    
+    Returns:
+        {"success": True, "message_id": str} on success
+        {"success": False, "error": str} on failure
+    """
+    url = f"{MAILGUN_API_BASE}/{domain}/messages"
+    
+    data = {
+        "from": f"Security Monitor <noreply@{domain}>",
+        "to": to,
+        "subject": subject,
+        "html": html,
+    }
+    
+    files = []
+    if attachments:
+        for filename, content in attachments:
+            files.append(("attachment", (filename, content)))
+    
+    try:
+        response = requests.post(
+            url,
+            auth=("api", api_key),
+            data=data,
+            files=files if files else None,
+            timeout=60,
+        )
+        
+        if response.status_code == 200:
+            return {"success": True, "message_id": response.json().get("id", "")}
+        else:
+            return {"success": False, "error": f"Mailgun API error: {response.status_code} - {response.text}"}
+    except requests.RequestException as e:
+        return {"success": False, "error": f"Request failed: {str(e)}"}
