@@ -27,8 +27,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Report Generation
 
-- [ ] **RPT-01**: System generates consolidated HTML report with all findings
-- [ ] **RPT-02**: Report includes executive summary (risk score, issue counts, key metrics)
+- [x] **RPT-01**: System generates consolidated HTML report with all findings
+- [x] **RPT-02**: Report includes executive summary (risk score, issue counts, key metrics)
 - [ ] **RPT-03**: Report shows historical trends (comparison with previous scan)
 - [ ] **RPT-04**: Report highlights new issues and fixed issues with visual indicators
 
@@ -88,8 +88,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CF-01 | Phase 2 | Complete |
 | CF-02 | Phase 2 | Complete |
 | CF-03 | Phase 2 | Complete |
-| RPT-01 | Phase 3 | Pending |
-| RPT-02 | Phase 3 | Pending |
+| RPT-01 | Phase 3 | Complete |
+| RPT-02 | Phase 3 | Complete |
 | RPT-03 | Phase 3 | Pending |
 | RPT-04 | Phase 3 | Pending |
 | EMAIL-01 | Phase 3 | Pending |
@@ -104,4 +104,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after completing Phase 2*
+*Last updated: 2026-03-16 after completing 03-01-PLAN.md*
