@@ -18,6 +18,9 @@ class Config:
     mailgun_api_key: str
     mailgun_domain: str
     github_token: str
+    sentry_token: str
+    sentry_org: str
+    sentry_env: str
     recipients: List[str]
 
     @property
@@ -66,6 +69,9 @@ class Config:
             "CLOUDFLARE_ZONE_ID",
             "MAILGUN_API_KEY",
             "GITHUB_TOKEN",
+            "SENTRY_AUTH_TOKEN",
+            "SENTRY_ORG",
+            "SENTRY_ENV",
         ]
 
         values = {}
@@ -97,5 +103,8 @@ class Config:
             mailgun_api_key=values["MAILGUN_API_KEY"],
             mailgun_domain=mailgun_domain,
             github_token=values["GITHUB_TOKEN"],
+            sentry_token=values["SENTRY_AUTH_TOKEN"],
+            sentry_org=values["SENTRY_ORG"],
+            sentry_env=values["SENTRY_ENV"],
             recipients=recipients,
         )
