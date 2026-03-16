@@ -131,7 +131,7 @@ def get_all_latest_reports(env: str) -> dict[str, dict]:
     Returns:
         Dict mapping source name to report data
     """
-    sources = ["http", "github", "sentry", "codacy", "websentry", "dependencies"]
+    sources = ["http", "github", "sentry", "codacy", "websentry", "dependencies", "wappalyzer"]
     reports = {}
     
     for source in sources:

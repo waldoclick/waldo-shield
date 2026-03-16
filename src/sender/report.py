@@ -173,6 +173,7 @@ def generate_html_report(reports: dict, domain: str) -> str:
         "sentry": "Sentry Errors",
         "codacy": "Codacy Code Quality",
         "dependencies": "Dependency Audit",
+        "wappalyzer": "Technology Detection",
         "websentry": "WebSentry External Scan",
     }
     
