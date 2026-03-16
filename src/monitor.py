@@ -105,7 +105,7 @@ def collect_all_data(config: Config) -> dict:
     # GitHub issues
     logging.info("Fetching GitHub issues")
     try:
-        github_issues = get_open_issues("waldoclick/waldo-project")
+        github_issues = get_open_issues("waldoclick/waldo-project", config.github_token)
     except Exception as e:
         logging.error(f"Failed to fetch GitHub issues: {e}")
         github_issues = {"error": str(e)}

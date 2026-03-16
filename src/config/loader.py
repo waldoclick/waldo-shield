@@ -17,6 +17,7 @@ class Config:
     cloudflare_zone_id: str
     mailgun_api_key: str
     mailgun_domain: str
+    github_token: str
     recipients: List[str]
 
     @property
@@ -64,6 +65,7 @@ class Config:
             "CLOUDFLARE_API_TOKEN",
             "CLOUDFLARE_ZONE_ID",
             "MAILGUN_API_KEY",
+            "GITHUB_TOKEN",
         ]
 
         values = {}
@@ -94,5 +96,6 @@ class Config:
             cloudflare_zone_id=values["CLOUDFLARE_ZONE_ID"],
             mailgun_api_key=values["MAILGUN_API_KEY"],
             mailgun_domain=mailgun_domain,
+            github_token=values["GITHUB_TOKEN"],
             recipients=recipients,
         )
