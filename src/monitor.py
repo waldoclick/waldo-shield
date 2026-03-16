@@ -92,7 +92,7 @@ def collect_all_data(config: Config) -> dict:
     for target in config.targets:
         logging.info(f"Scanning {target}")
         try:
-            http_results[target] = http_scan(target, ["headers", "ssl", "dns", "tech", "vulns"])
+            http_results[target] = http_scan(target, ["headers", "ssl", "dns", "tech"])
         except Exception as e:
             logging.error(f"Failed to scan {target}: {e}")
             http_results[target] = {"error": str(e), "all_issues": [], "risk_summary": {"score": 0, "issue_counts": {}}}
