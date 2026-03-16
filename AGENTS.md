@@ -50,7 +50,7 @@ python src/scanner.py https://api.waldoclick.dev --output reports/my_report.json
 ## Business Context (important for security assessment)
 
 - **AI endpoints** (`/api/ia/*`, `/api/search/tavily`) — only used from `dashboard.*` by users with `manager` role. Protected by Cloudflare Zero Trust. SEC-004/028 from security-report.md are **not exploitable** from public internet.
-- **Cron runner** (`/api/cron-runner/*`) — same, only triggered from dashboard by managers. SEC-005 severity is reduced by Zero Trust.
+- **Cron runner** (`/api/cron-runner/*`) — only used in local/dev environments to test cron jobs manually. Never active in staging or prod. SEC-005 is not a real risk in production. Pending: add environment gate so the endpoint only responds in `local`/`dev`.
 - **Images upload** — single request (not batched), safe for POST rate limiting rules.
 
 ---
