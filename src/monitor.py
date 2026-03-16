@@ -33,6 +33,7 @@ from config import Config
 from modules.app_scanner import scan_all
 from modules.email_auth import analyze_domain
 from modules.cloudflare_api import collect_cloudflare_data
+from modules.github_issues import get_open_issues
 from report import generate_report
 from report.comparison import compare_scans
 from report.storage import load_latest_scan, save_scan
@@ -101,6 +102,14 @@ def collect_all_data(config: Config) -> dict:
         logging.error(f"Failed to collect Cloudflare data: {e}")
         cloudflare = {"error": str(e)}
     
+    # GitHub issues
+    logging.info("Fetching GitHub issues")
+    try:
+        github_issues = get_open_issues("waldoclick/waldo-project")
+    except Exception as e:
+        logging.error(f"Failed to fetch GitHub issues: {e}")
+        github_issues = {"error": str(e)}
+    
     return {
         "domain": config.domain,
         "environment": config.environment,
@@ -108,6 +117,7 @@ def collect_all_data(config: Config) -> dict:
         "apps": app_results,
         "email_auth": email_auth,
         "cloudflare": cloudflare,
+        "github_issues": github_issues,
     }
 
 
