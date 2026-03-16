@@ -2,7 +2,7 @@
 
 Security monitoring system for the waldo.click platform.
 
-Automatically scans `waldo.click` (prod) or `waldoclick.dev` (staging) and sends email reports when issues are found.
+Collects security data from multiple sources and sends consolidated weekly reports.
 
 ## Quick Start
 
@@ -14,11 +14,18 @@ pip install -r src/requirements.txt
 cp .env.example .env
 # Edit .env with your values
 
-# Run scan (dry run - no email)
-cd src && python3 monitor.py --dry-run
+# Test collectors manually
+cd src
+python3 -m collectors.http
+python3 -m collectors.github
+python3 -m collectors.sentry
+python3 -m collectors.codacy
 
-# Run scan (sends email if issues found)
-cd src && python3 monitor.py
+# Test email (dry run)
+python3 -m sender.report --dry-run
+
+# Send real email
+python3 -m sender.report
 ```
 
 ## Configuration
@@ -26,81 +33,178 @@ cd src && python3 monitor.py
 Set these in `.env`:
 
 ```bash
-DOMAIN=waldo.click              # or waldoclick.dev
-CLOUDFLARE_API_TOKEN=xxx        # Cloudflare API token
-CLOUDFLARE_ZONE_ID=xxx          # Zone ID for the domain
-MAILGUN_API_KEY=xxx             # Mailgun API key
+# Required
+DOMAIN=waldo.click                    # or waldoclick.dev
+CLOUDFLARE_API_TOKEN=xxx
+CLOUDFLARE_ZONE_ID=xxx
+MAILGUN_API_KEY=xxx
+GITHUB_TOKEN=xxx
+SENTRY_AUTH_TOKEN=xxx
+SENTRY_ORG=waldoclick
+SENTRY_ENV=production
+CODACY_API_TOKEN=xxx
+CODACY_ORG=waldoclick
+CODACY_REPO=waldo-project
+
+# Email settings
+REPORT_RECIPIENTS=security@waldo.click,admin@waldo.click
+REPORT_ZIP_PASSWORD=your_password_here
+
+# Optional (for external scanning)
+WEBSENTRY_API_KEY=ss_xxx              # Requires WebSentry Pro $12/mo
 ```
 
-## What It Scans
+## Data Sources
 
-Each app has specific security checks:
-
-| App | URL | Checks |
-|-----|-----|--------|
-| Dashboard | `dashboard.{domain}` | Zero Trust protection only |
-| API | `api.{domain}` | Headers, SSL, robots.txt, `/admin` Zero Trust |
-| Website | `www.{domain}` | Full analysis (headers, SSL, DNS, tech) |
-
-Plus:
-- **Email Auth**: SPF, DKIM, DMARC, CAA records
-- **Cloudflare**: WAF events, traffic analytics, rate limiting rules
-
-## Output
-
-```
-============================================================
-  SCAN COMPLETE: waldo.click
-============================================================
-  ✓ dashboard    | NONE     | Score:   0 | Issues: 0
-  ✓ api          | NONE     | Score:   0 | Issues: 0
-  ✓ www          | LOW      | Score:   1 | Issues: 1
-============================================================
-```
-
-Reports saved to `reports/{environment}/scan_{timestamp}.json`
+| Source | What it collects |
+|--------|------------------|
+| **HTTP Scanner** | Headers, SSL, Zero Trust, email auth (SPF/DKIM/DMARC) |
+| **GitHub** | Open issues from repository |
+| **Sentry** | Unresolved runtime errors by project |
+| **Codacy** | Code quality issues (security, unused code, etc.) |
+| **WebSentry** | External DAST scan (optional, paid) |
 
 ## Cron Setup
 
-For Laravel Forge:
+### Option 1: Direct crontab
 
 ```bash
-0 6 * * * cd /path/to/waldo-shield/src && /usr/bin/python3 monitor.py --quiet
+crontab -e
 ```
 
-Exit codes:
-- `0` - No critical/high issues
-- `1` - Critical or high issues found
-- `2` - Execution error
+Add these lines (adjust `/path/to/waldo-shield`):
 
-## Structure
+```bash
+# =============================================================
+# WALDO-SHIELD SECURITY MONITORING
+# =============================================================
+
+# Daily collectors (6am)
+0 6 * * * cd /path/to/waldo-shield/src && /usr/bin/python3 -m collectors.http >> /var/log/waldo-shield.log 2>&1
+0 6 * * * cd /path/to/waldo-shield/src && /usr/bin/python3 -m collectors.github >> /var/log/waldo-shield.log 2>&1
+0 6 * * * cd /path/to/waldo-shield/src && /usr/bin/python3 -m collectors.sentry >> /var/log/waldo-shield.log 2>&1
+
+# Weekly collectors (Monday 6am)
+0 6 * * 1 cd /path/to/waldo-shield/src && /usr/bin/python3 -m collectors.codacy >> /var/log/waldo-shield.log 2>&1
+
+# External scan 3x/month (days 1, 10, 20 at 6am) - requires WEBSENTRY_API_KEY
+0 6 1,10,20 * * cd /path/to/waldo-shield/src && /usr/bin/python3 -m collectors.websentry >> /var/log/waldo-shield.log 2>&1
+
+# Weekly email report (Monday 8am)
+0 8 * * 1 cd /path/to/waldo-shield/src && /usr/bin/python3 -m sender.report >> /var/log/waldo-shield.log 2>&1
+```
+
+### Option 2: Laravel Forge
+
+In Forge → Server → Scheduled Jobs, create these jobs:
+
+| Command | Frequency | User |
+|---------|-----------|------|
+| `cd /home/forge/waldo-shield/src && python3 -m collectors.http` | Daily at 6:00 | forge |
+| `cd /home/forge/waldo-shield/src && python3 -m collectors.github` | Daily at 6:00 | forge |
+| `cd /home/forge/waldo-shield/src && python3 -m collectors.sentry` | Daily at 6:00 | forge |
+| `cd /home/forge/waldo-shield/src && python3 -m collectors.codacy` | Weekly (Mon) at 6:00 | forge |
+| `cd /home/forge/waldo-shield/src && python3 -m sender.report` | Weekly (Mon) at 8:00 | forge |
+
+### Option 3: Systemd timers
+
+Create `/etc/systemd/system/waldo-shield-daily.service`:
+
+```ini
+[Unit]
+Description=Waldo Shield Daily Collectors
+
+[Service]
+Type=oneshot
+WorkingDirectory=/path/to/waldo-shield/src
+ExecStart=/usr/bin/python3 -m collectors.http
+ExecStart=/usr/bin/python3 -m collectors.github
+ExecStart=/usr/bin/python3 -m collectors.sentry
+User=www-data
+```
+
+Create `/etc/systemd/system/waldo-shield-daily.timer`:
+
+```ini
+[Unit]
+Description=Run Waldo Shield daily at 6am
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable:
+
+```bash
+sudo systemctl enable waldo-shield-daily.timer
+sudo systemctl start waldo-shield-daily.timer
+```
+
+## Verify Cron is Working
+
+```bash
+# Check cron logs
+grep waldo-shield /var/log/syslog
+
+# Check our log
+tail -f /var/log/waldo-shield.log
+
+# List scheduled jobs
+crontab -l
+
+# Verify reports are being created
+ls -la /path/to/waldo-shield/reports/*/prod/
+```
+
+## Reports Structure
+
+```
+reports/
+├── http/prod/
+│   └── http_20260316_060000.json
+├── github/prod/
+│   └── github_20260316_060000.json
+├── sentry/prod/
+│   └── sentry_20260316_060000.json
+├── codacy/prod/
+│   └── codacy_20260311_060000.json
+└── websentry/prod/
+    └── websentry_20260310_060000.json
+```
+
+Reports older than 7 days are automatically deleted.
+
+## Email Report
+
+Weekly email includes:
+- Summary cards (HTTP issues, GitHub issues, Sentry errors, Codacy issues)
+- Scan timestamps for each source
+- HTTP security status per app
+- WebSentry grades (if configured)
+- Codacy breakdown by severity
+- **ZIP attachment** with full JSON reports (password protected)
+
+## Project Structure
 
 ```
 waldo-shield/
 ├── src/
-│   ├── monitor.py           # Main entry point
-│   ├── config/              # Environment configuration
-│   ├── modules/
-│   │   ├── app_scanner.py   # App-specific scanning rules
-│   │   ├── headers.py       # HTTP security headers
-│   │   ├── ssl_tls.py       # SSL/TLS analysis
-│   │   ├── dns_analysis.py  # DNS records
-│   │   ├── email_auth.py    # SPF/DKIM/DMARC/CAA
-│   │   └── cloudflare_api.py # Cloudflare integration
-│   ├── report/              # HTML report generation
-│   └── mailer/              # Mailgun email delivery
-├── reports/                 # Scan output (gitignored)
-└── tests/                   # Test suite
+│   ├── collectors/          # Independent data collectors
+│   │   ├── http.py         # HTTP headers, SSL, apps
+│   │   ├── github.py       # GitHub issues
+│   │   ├── sentry.py       # Sentry errors
+│   │   ├── codacy.py       # Code quality
+│   │   └── websentry.py    # External DAST
+│   ├── sender/
+│   │   └── report.py       # Consolidate + ZIP + email
+│   ├── modules/            # API integrations
+│   ├── config/             # Environment config
+│   ├── report/             # HTML templates
+│   └── mailer/             # Mailgun sender
+├── reports/                # JSON output (gitignored)
+└── .env                    # Configuration (gitignored)
 ```
-
-## Email Alerts
-
-Emails are sent via Mailgun only when:
-- Risk score exceeds threshold (20+)
-- New critical or high severity issues found
-
-Reports include:
-- Executive summary with risk score
-- Per-app findings
-- Historical comparison (NEW/FIXED badges)
-- Trend indicators (improved/degraded/stable)
