@@ -133,6 +133,22 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
                         </td>
                     </tr>
 
+                    <!-- GitHub Issues -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">GitHub Issues</h2>
+                            {github_html}
+                        </td>
+                    </tr>
+
+                    <!-- Sentry Errors -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Sentry Errors</h2>
+                            {sentry_html}
+                        </td>
+                    </tr>
+
                     <!-- All Issues Table -->
                     <tr>
                         <td style="padding: 0 30px 30px 30px;">
@@ -384,3 +400,110 @@ FIXED_ISSUE_ROW_TEMPLATE = """<tr style="border-bottom: 1px solid #e5e7eb;">
     <td style="padding: 8px; color: #64748b; vertical-align: top;">{source}</td>
     <td style="padding: 8px; color: #1a1a2e; vertical-align: top; text-decoration: line-through;">{message}</td>
 </tr>"""
+
+# GitHub Issues section
+GITHUB_SECTION_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="background-color: #f8fafc; padding: 15px; border-radius: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 10px;">
+                <tr>
+                    <td>
+                        <span style="color: #1a1a2e; font-size: 14px; font-weight: 600;">Open Issues:</span>
+                        <span style="color: #fd7e14; font-size: 14px; font-weight: 700; margin-left: 5px;">{open_count}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{repo_url}/issues" style="color: #3b82f6; font-size: 12px; text-decoration: none;">View all &rarr;</a>
+                    </td>
+                </tr>
+            </table>
+            {issues_html}
+        </td>
+    </tr>
+</table>"""
+
+GITHUB_ISSUE_ROW_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 8px;">
+    <tr>
+        <td style="padding: 8px; background-color: #fff; border-radius: 4px; border-left: 3px solid {label_color};">
+            <a href="{url}" style="color: #1a1a2e; font-size: 13px; text-decoration: none; font-weight: 500;">{title}</a>
+            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 11px;">
+                #{number} opened {created_at} {labels_html}
+            </p>
+        </td>
+    </tr>
+</table>"""
+
+GITHUB_LABEL_TEMPLATE = """<span style="background-color: #{color}; color: {text_color}; padding: 1px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">{name}</span>"""
+
+GITHUB_NO_DATA_TEMPLATE = """<p style="color: #28a745; font-size: 14px; margin: 0;">No open issues - great job!</p>"""
+
+GITHUB_ERROR_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="background-color: #f8d7da; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0; color: #721c24; font-size: 14px;">Error fetching GitHub issues: {error}</p>
+        </td>
+    </tr>
+</table>"""
+
+# Sentry Issues section
+SENTRY_SECTION_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="background-color: #f8fafc; padding: 15px; border-radius: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 10px;">
+                <tr>
+                    <td>
+                        <span style="color: #1a1a2e; font-size: 14px; font-weight: 600;">Unresolved Issues:</span>
+                        <span style="color: #dc3545; font-size: 14px; font-weight: 700; margin-left: 5px;">{total_count}</span>
+                        <span style="color: #64748b; font-size: 12px; margin-left: 5px;">({environment})</span>
+                    </td>
+                </tr>
+            </table>
+            {projects_html}
+        </td>
+    </tr>
+</table>"""
+
+SENTRY_PROJECT_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 12px;">
+    <tr>
+        <td style="padding-bottom: 6px;">
+            <span style="color: #475569; font-size: 13px; font-weight: 600;">{project_name}</span>
+            <span style="color: #64748b; font-size: 12px; margin-left: 5px;">({count} issues)</span>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            {issues_html}
+        </td>
+    </tr>
+</table>"""
+
+SENTRY_ISSUE_ROW_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 6px;">
+    <tr>
+        <td style="padding: 8px; background-color: #fff; border-radius: 4px; border-left: 3px solid {level_color};">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td>
+                        <a href="{url}" style="color: #1a1a2e; font-size: 12px; text-decoration: none;">{title}</a>
+                    </td>
+                    <td style="text-align: right; width: 60px;">
+                        <span style="background-color: {level_bg}; color: {level_color}; padding: 2px 6px; border-radius: 10px; font-size: 10px; text-transform: uppercase;">{level}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 11px;">{culprit} &middot; {count}x &middot; Last seen {last_seen}</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>"""
+
+SENTRY_NO_DATA_TEMPLATE = """<p style="color: #28a745; font-size: 14px; margin: 0;">No unresolved issues - great job!</p>"""
+
+SENTRY_ERROR_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="background-color: #f8d7da; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0; color: #721c24; font-size: 14px;">Error fetching Sentry issues: {error}</p>
+        </td>
+    </tr>
+</table>"""

@@ -35,6 +35,18 @@ from .templates import (
     COMPARISON_SUMMARY_TEMPLATE,
     FIXED_ISSUES_SECTION_TEMPLATE,
     FIXED_ISSUE_ROW_TEMPLATE,
+    # GitHub templates
+    GITHUB_SECTION_TEMPLATE,
+    GITHUB_ISSUE_ROW_TEMPLATE,
+    GITHUB_LABEL_TEMPLATE,
+    GITHUB_NO_DATA_TEMPLATE,
+    GITHUB_ERROR_TEMPLATE,
+    # Sentry templates
+    SENTRY_SECTION_TEMPLATE,
+    SENTRY_PROJECT_TEMPLATE,
+    SENTRY_ISSUE_ROW_TEMPLATE,
+    SENTRY_NO_DATA_TEMPLATE,
+    SENTRY_ERROR_TEMPLATE,
 )
 
 
@@ -53,6 +65,8 @@ def generate_report(data: dict[str, Any]) -> str:
             - http_results: dict[url -> scanner result] (from scanner.scan())
             - email_auth: dict[domain -> analysis result] (from email_auth.analyze_domain())
             - cloudflare: dict (from cloudflare_api.collect_cloudflare_data())
+            - github: dict (from github_issues.get_github_issues())
+            - sentry: dict (from sentry_issues.get_sentry_issues())
             - comparison: dict (optional, from compare_scans())
 
     Returns:
@@ -60,10 +74,37 @@ def generate_report(data: dict[str, Any]) -> str:
     """
     environment = data.get("environment", "unknown")
     scan_date = data.get("scan_date", "")
+    
+    # Support both old format (targets/http_results) and new format (apps)
     targets = data.get("targets", [])
     http_results = data.get("http_results", {})
+    
+    # If apps format is used, convert to http_results format
+    apps = data.get("apps", {})
+    if apps and not http_results:
+        domain = data.get("domain", "")
+        for app_name, app_data in apps.items():
+            if isinstance(app_data, dict):
+                url = f"https://{app_name}.{domain}"
+                targets.append(url)
+                http_results[url] = app_data
+    
     email_auth = data.get("email_auth", {})
     cloudflare = data.get("cloudflare", {})
+    
+    # Support both github/sentry and github_issues/sentry_issues keys
+    github = data.get("github") or data.get("github_issues", {})
+    sentry = data.get("sentry") or data.get("sentry_issues", {})
+    
+    # Transform github_issues format to expected github format
+    if github and "total" in github and "open_count" not in github:
+        github = {
+            "open_count": github.get("total", 0),
+            "repo_url": f"https://github.com/{github.get('repo', '')}",
+            "issues": github.get("issues", []),
+            "error": github.get("error"),
+        }
+    
     comparison = data.get("comparison")
 
     # Aggregate data across all sources
@@ -89,6 +130,8 @@ def generate_report(data: dict[str, Any]) -> str:
     http_findings_html = _render_http_findings(http_results)
     email_auth_html = _render_email_auth(email_auth)
     cloudflare_html = _render_cloudflare(cloudflare)
+    github_html = _render_github(github)
+    sentry_html = _render_sentry(sentry)
     issues_table_html = _render_issues_table(aggregate["all_issues"], new_issue_keys)
     
     # Add comparison section and fixed issues if comparison data present
@@ -112,6 +155,8 @@ def generate_report(data: dict[str, Any]) -> str:
         http_findings_html=http_findings_html,
         email_auth_html=email_auth_html,
         cloudflare_html=cloudflare_html,
+        github_html=github_html,
+        sentry_html=sentry_html,
         issues_table_html=issues_table_html + fixed_issues_html,
     )
 
@@ -365,7 +410,7 @@ def _render_cloudflare(cloudflare: dict[str, Any]) -> str:
     )
 
 
-def _render_issues_table(all_issues: list[dict[str, Any]], new_issue_keys: set = None) -> str:
+def _render_issues_table(all_issues: list[dict[str, Any]], new_issue_keys: set | None = None) -> str:
     """Render the issues table section.
     
     Args:
@@ -465,3 +510,189 @@ def _render_fixed_issues(comparison: dict | None) -> str:
         )
     
     return FIXED_ISSUES_SECTION_TEMPLATE.format(rows=rows)
+
+
+def _render_github(github: dict[str, Any]) -> str:
+    """Render the GitHub issues section."""
+    if not github:
+        return GITHUB_NO_DATA_TEMPLATE
+
+    # Check for errors
+    if github.get("error"):
+        return GITHUB_ERROR_TEMPLATE.format(error=github["error"])
+
+    issues = github.get("issues", [])
+    open_count = github.get("open_count", len(issues))
+    repo_url = github.get("repo_url", "https://github.com")
+
+    if not issues and open_count == 0:
+        return GITHUB_NO_DATA_TEMPLATE
+
+    # Render up to 10 issues
+    issues_html = ""
+    for issue in issues[:10]:
+        title = issue.get("title", "Untitled")
+        number = issue.get("number", 0)
+        url = issue.get("url", "#")
+        created_at = _format_relative_time(issue.get("created_at", ""))
+        labels = issue.get("labels", [])
+
+        # Render labels
+        labels_html = ""
+        for label in labels[:3]:  # Max 3 labels
+            label_color = label.get("color", "e1e4e8")
+            label_name = label.get("name", "")
+            # Determine text color based on background brightness
+            text_color = _get_contrast_color(label_color)
+            labels_html += GITHUB_LABEL_TEMPLATE.format(
+                color=label_color,
+                text_color=text_color,
+                name=label_name,
+            )
+
+        # Determine border color (use first label color or default)
+        label_color = f"#{labels[0]['color']}" if labels else "#6c757d"
+
+        issues_html += GITHUB_ISSUE_ROW_TEMPLATE.format(
+            title=title[:80] + "..." if len(title) > 80 else title,
+            number=number,
+            url=url,
+            created_at=created_at,
+            labels_html=labels_html,
+            label_color=label_color,
+        )
+
+    if open_count > 10:
+        issues_html += f'<p style="color: #64748b; font-size: 12px; margin: 8px 0 0 0;">... and {open_count - 10} more issues</p>'
+
+    return GITHUB_SECTION_TEMPLATE.format(
+        open_count=open_count,
+        repo_url=repo_url,
+        issues_html=issues_html,
+    )
+
+
+def _render_sentry(sentry: dict[str, Any]) -> str:
+    """Render the Sentry issues section."""
+    if not sentry:
+        return SENTRY_NO_DATA_TEMPLATE
+
+    # Check for errors
+    if sentry.get("error"):
+        return SENTRY_ERROR_TEMPLATE.format(error=sentry["error"])
+
+    total = sentry.get("total", 0)
+    environment = sentry.get("environment", "production")
+    projects = sentry.get("projects", {})
+
+    if total == 0:
+        return SENTRY_NO_DATA_TEMPLATE
+
+    # Sentry level colors
+    level_colors = {
+        "fatal": {"color": "#dc3545", "bg": "#f8d7da"},
+        "error": {"color": "#dc3545", "bg": "#f8d7da"},
+        "warning": {"color": "#ffc107", "bg": "#fff3cd"},
+        "info": {"color": "#17a2b8", "bg": "#d1ecf1"},
+        "debug": {"color": "#6c757d", "bg": "#e9ecef"},
+    }
+
+    # Render each project
+    projects_html = ""
+    for project_slug, project_data in projects.items():
+        project_name = project_data.get("name", project_slug)
+        count = project_data.get("count", 0)
+        issues = project_data.get("issues", [])
+
+        # Render up to 5 issues per project
+        issues_html = ""
+        for issue in issues[:5]:
+            title = issue.get("title", "Untitled")
+            level = issue.get("level", "error")
+            culprit = issue.get("culprit", "")
+            event_count = issue.get("count", 1)
+            last_seen = _format_relative_time(issue.get("last_seen", ""))
+            url = issue.get("url", "#")
+
+            level_style = level_colors.get(level, level_colors["error"])
+
+            issues_html += SENTRY_ISSUE_ROW_TEMPLATE.format(
+                title=title[:70] + "..." if len(title) > 70 else title,
+                level=level,
+                level_color=level_style["color"],
+                level_bg=level_style["bg"],
+                culprit=culprit[:40] + "..." if len(culprit) > 40 else culprit,
+                count=event_count,
+                last_seen=last_seen,
+                url=url,
+            )
+
+        if count > 5:
+            issues_html += f'<p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0;">... and {count - 5} more</p>'
+
+        projects_html += SENTRY_PROJECT_TEMPLATE.format(
+            project_name=project_name,
+            count=count,
+            issues_html=issues_html,
+        )
+
+    return SENTRY_SECTION_TEMPLATE.format(
+        total_count=total,
+        environment=environment,
+        projects_html=projects_html,
+    )
+
+
+def _format_relative_time(iso_timestamp: str) -> str:
+    """Format ISO timestamp as relative time (e.g., '2 days ago')."""
+    if not iso_timestamp:
+        return "unknown"
+
+    from datetime import datetime, timezone
+
+    try:
+        # Parse ISO timestamp
+        if iso_timestamp.endswith("Z"):
+            iso_timestamp = iso_timestamp[:-1] + "+00:00"
+        dt = datetime.fromisoformat(iso_timestamp)
+        now = datetime.now(timezone.utc)
+
+        # Make dt timezone-aware if it isn't
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+
+        delta = now - dt
+        seconds = delta.total_seconds()
+
+        if seconds < 60:
+            return "just now"
+        elif seconds < 3600:
+            mins = int(seconds / 60)
+            return f"{mins}m ago"
+        elif seconds < 86400:
+            hours = int(seconds / 3600)
+            return f"{hours}h ago"
+        elif seconds < 604800:
+            days = int(seconds / 86400)
+            return f"{days}d ago"
+        elif seconds < 2592000:
+            weeks = int(seconds / 604800)
+            return f"{weeks}w ago"
+        else:
+            return dt.strftime("%b %d")
+    except Exception:
+        return "unknown"
+
+
+def _get_contrast_color(hex_color: str) -> str:
+    """Get contrasting text color (black or white) for a background color."""
+    try:
+        hex_color = hex_color.lstrip("#")
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        # Calculate luminance
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        return "#000" if luminance > 0.5 else "#fff"
+    except Exception:
+        return "#000"
