@@ -79,28 +79,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 | - | Pending |
-| CONF-02 | - | Pending |
-| DNS-01 | - | Pending |
-| DNS-02 | - | Pending |
-| DNS-03 | - | Pending |
-| DNS-04 | - | Pending |
-| CF-01 | - | Pending |
-| CF-02 | - | Pending |
-| CF-03 | - | Pending |
-| RPT-01 | - | Pending |
-| RPT-02 | - | Pending |
-| RPT-03 | - | Pending |
-| RPT-04 | - | Pending |
-| EMAIL-01 | - | Pending |
-| EMAIL-02 | - | Pending |
-| OPS-01 | - | Pending |
-| OPS-02 | - | Pending |
+| CONF-01 | Phase 1 | Pending |
+| CONF-02 | Phase 1 | Pending |
+| DNS-01 | Phase 2 | Pending |
+| DNS-02 | Phase 2 | Pending |
+| DNS-03 | Phase 2 | Pending |
+| DNS-04 | Phase 2 | Pending |
+| CF-01 | Phase 2 | Pending |
+| CF-02 | Phase 2 | Pending |
+| CF-03 | Phase 2 | Pending |
+| RPT-01 | Phase 3 | Pending |
+| RPT-02 | Phase 3 | Pending |
+| RPT-03 | Phase 3 | Pending |
+| RPT-04 | Phase 3 | Pending |
+| EMAIL-01 | Phase 3 | Pending |
+| EMAIL-02 | Phase 3 | Pending |
+| OPS-01 | Phase 3 | Pending |
+| OPS-02 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 (pending roadmap)
+- Mapped to phases: 17 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-16*
