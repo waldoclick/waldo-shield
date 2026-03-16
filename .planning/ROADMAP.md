@@ -51,7 +51,11 @@ Plans:
 4. System retrieves traffic analytics (total requests, blocked percentage) from Cloudflare
 5. System retrieves configured rate limiting rules from Cloudflare
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — DNS/email authentication module (SPF, DKIM, DMARC, CAA)
+- [ ] 02-02-PLAN.md — Cloudflare API integration (WAF events, traffic analytics, rate limits)
 
 ---
 
@@ -79,7 +83,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Config | 1/1 | Complete    | 2026-03-16 |
-| 2. Data Collection | 0/? | Not started | - |
+| 2. Data Collection | 0/2 | In Progress | - |
 | 3. Report & Delivery | 0/? | Not started | - |
 
 ---
