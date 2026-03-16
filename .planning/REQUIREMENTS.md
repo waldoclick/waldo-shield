@@ -34,13 +34,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Email Delivery
 
-- [ ] **EMAIL-01**: System sends report via Mailgun to configured recipients
-- [ ] **EMAIL-02**: System only sends email when threshold exceeded or new critical/high found
+- [x] **EMAIL-01**: System sends report via Mailgun to configured recipients
+- [x] **EMAIL-02**: System only sends email when threshold exceeded or new critical/high found
 
 ### Operations
 
-- [ ] **OPS-01**: System runs as cron job compatible with Laravel Forge
-- [ ] **OPS-02**: System exits with non-zero code when critical/high issues found
+- [x] **OPS-01**: System runs as cron job compatible with Laravel Forge
+- [x] **OPS-02**: System exits with non-zero code when critical/high issues found
 
 ## v2 Requirements
 
@@ -92,16 +92,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RPT-02 | Phase 3 | Complete |
 | RPT-03 | Phase 3 | Complete |
 | RPT-04 | Phase 3 | Complete |
-| EMAIL-01 | Phase 3 | Pending |
-| EMAIL-02 | Phase 3 | Pending |
-| OPS-01 | Phase 3 | Pending |
-| OPS-02 | Phase 3 | Pending |
+| EMAIL-01 | Phase 3 | Complete |
+| EMAIL-02 | Phase 3 | Complete |
+| OPS-01 | Phase 3 | Complete |
+| OPS-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 17 total
 - Mapped to phases: 17 ✓
 - Unmapped: 0
+- Complete: 17/17 ✓
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after completing 03-02-PLAN.md*
+*Last updated: 2026-03-16 after completing 03-03-PLAN.md (milestone complete)*
