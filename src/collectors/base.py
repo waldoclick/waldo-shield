@@ -2,8 +2,12 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+
+
+# Keep reports for this many days
+RETENTION_DAYS = 7
 
 
 def get_reports_dir() -> Path:
@@ -12,8 +16,44 @@ def get_reports_dir() -> Path:
     return project_root / "reports"
 
 
+def cleanup_old_reports(source: str, env: str, days: int = RETENTION_DAYS) -> int:
+    """Delete reports older than N days.
+    
+    Args:
+        source: Collector name (http, github, sentry, codacy, websentry)
+        env: Environment (prod or staging)
+        days: Keep reports from last N days
+        
+    Returns:
+        Number of files deleted
+    """
+    reports_dir = get_reports_dir() / source / env
+    
+    if not reports_dir.exists():
+        return 0
+    
+    cutoff = datetime.now() - timedelta(days=days)
+    deleted = 0
+    
+    for filepath in reports_dir.glob(f"{source}_*.json"):
+        # Parse timestamp from filename: source_YYYYMMDD_HHMMSS.json
+        try:
+            filename = filepath.stem  # source_YYYYMMDD_HHMMSS
+            timestamp_str = filename.split("_", 1)[1]  # YYYYMMDD_HHMMSS
+            file_date = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
+            
+            if file_date < cutoff:
+                filepath.unlink()
+                deleted += 1
+        except (ValueError, IndexError):
+            # Can't parse date, skip
+            continue
+    
+    return deleted
+
+
 def save_report(source: str, domain: str, data: dict) -> Path:
-    """Save a collector report as JSON.
+    """Save a collector report as JSON and cleanup old reports.
     
     Args:
         source: Collector name (http, github, sentry, codacy, websentry)
@@ -47,6 +87,12 @@ def save_report(source: str, domain: str, data: dict) -> Path:
     # Save
     with open(filepath, "w") as f:
         json.dump(data, f, indent=2, default=str)
+    
+    # Cleanup old reports
+    deleted = cleanup_old_reports(source, env)
+    if deleted > 0:
+        import logging
+        logging.info(f"Cleaned up {deleted} old {source} report(s)")
     
     return filepath
 
