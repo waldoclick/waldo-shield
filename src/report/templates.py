@@ -327,3 +327,60 @@ ISSUE_ROW_TEMPLATE = """<tr style="border-bottom: 1px solid #e5e7eb;">
 </tr>"""
 
 ISSUES_NO_DATA_TEMPLATE = """<p style="color: #28a745; font-size: 14px; margin: 0; text-align: center; padding: 20px;">No issues found - great job!</p>"""
+
+# Comparison/trend templates
+NEW_BADGE = """<span style="background-color: #dc3545; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-left: 8px;">NEW</span>"""
+
+FIXED_BADGE = """<span style="background-color: #28a745; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-left: 8px;">FIXED</span>"""
+
+TREND_IMPROVED = """<span style="color: #28a745; font-size: 14px;">↓ Improved ({delta})</span>"""
+TREND_DEGRADED = """<span style="color: #dc3545; font-size: 14px;">↑ Degraded (+{delta})</span>"""
+TREND_STABLE = """<span style="color: #6c757d; font-size: 14px;">→ Stable</span>"""
+
+COMPARISON_SUMMARY_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 20px;">
+    <tr>
+        <td style="background-color: #f8fafc; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0 0 10px 0; color: #1a1a2e; font-size: 14px; font-weight: 600;">Comparison with Previous Scan</p>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="padding: 4px 0;">
+                        <span style="color: #64748b; font-size: 12px;">Trend:</span>
+                        <span style="margin-left: 8px;">{trend_indicator}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 0;">
+                        <span style="color: #64748b; font-size: 12px;">New Issues:</span>
+                        <span style="color: #dc3545; font-size: 12px; font-weight: 600; margin-left: 5px;">{new_count}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 0;">
+                        <span style="color: #64748b; font-size: 12px;">Fixed Issues:</span>
+                        <span style="color: #28a745; font-size: 12px; font-weight: 600; margin-left: 5px;">{fixed_count}</span>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>"""
+
+FIXED_ISSUES_SECTION_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 20px;">
+    <tr>
+        <td style="padding: 0;">
+            <h3 style="margin: 20px 0 10px 0; color: #28a745; font-size: 14px;">Recently Fixed Issues</h3>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size: 12px;">
+                {rows}
+            </table>
+        </td>
+    </tr>
+</table>"""
+
+FIXED_ISSUE_ROW_TEMPLATE = """<tr style="border-bottom: 1px solid #e5e7eb;">
+    <td style="padding: 8px; vertical-align: top;">
+        <span style="background-color: #d4edda; color: #28a745; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase;">{severity}</span>
+        {fixed_badge}
+    </td>
+    <td style="padding: 8px; color: #64748b; vertical-align: top;">{source}</td>
+    <td style="padding: 8px; color: #1a1a2e; vertical-align: top; text-decoration: line-through;">{message}</td>
+</tr>"""

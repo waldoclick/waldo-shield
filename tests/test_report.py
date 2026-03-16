@@ -432,3 +432,126 @@ class TestHTMLStructure:
         assert "waldoclick.dev" in html
         assert "50" in html  # WAF total events
         assert "SPF" in html and "DMARC" in html
+
+
+class TestComparisonDisplay:
+    """Tests for comparison data display in reports."""
+
+    @pytest.fixture
+    def comparison_data(self):
+        """Report data with comparison information."""
+        return {
+            "environment": "staging",
+            "scan_date": "2026-03-16T12:00:00Z",
+            "targets": ["https://api.waldoclick.dev"],
+            "http_results": {
+                "https://api.waldoclick.dev": {
+                    "risk_summary": {
+                        "score": 25,
+                        "risk_level": "medium",
+                        "issue_counts": {"critical": 0, "high": 1, "medium": 1, "low": 0, "info": 0},
+                    },
+                    "all_issues": [
+                        {"severity": "high", "message": "Missing HSTS header", "source_module": "http_headers"},
+                        {"severity": "medium", "message": "Missing CSP header", "source_module": "http_headers"},
+                    ],
+                },
+            },
+            "email_auth": {},
+            "cloudflare": {},
+            "comparison": {
+                "risk_trend": "improved",
+                "score_delta": -10,
+                "new_issues": [
+                    {"severity": "medium", "message": "Missing CSP header", "source_module": "http_headers"},
+                ],
+                "fixed_issues": [
+                    {"severity": "high", "message": "Open redirect vulnerability", "source_module": "vulnerabilities"},
+                ],
+                "new_count": 1,
+                "fixed_count": 1,
+            },
+        }
+
+    def test_new_badge_appears_for_new_issues(self, comparison_data):
+        """Test that NEW badge appears for issues in comparison.new_issues."""
+        from report.generator import generate_report
+
+        html = generate_report(comparison_data)
+
+        # NEW badge should appear in the HTML
+        assert ">NEW<" in html or "NEW</span>" in html
+
+    def test_fixed_section_appears_when_fixed_issues(self, comparison_data):
+        """Test that FIXED section appears when there are fixed issues."""
+        from report.generator import generate_report
+
+        html = generate_report(comparison_data)
+
+        # FIXED badge should appear
+        assert "FIXED" in html
+        # The fixed issue message should appear
+        assert "Open redirect" in html
+
+    def test_trend_indicator_shows_correct_direction(self, comparison_data):
+        """Test that trend indicator shows correct direction (improved/degraded/stable)."""
+        from report.generator import generate_report
+
+        html = generate_report(comparison_data)
+
+        # Should show improved indicator (down arrow or similar)
+        # We expect either the trend text or an arrow indicator
+        assert "improved" in html.lower() or "↓" in html or "-10" in html
+
+    def test_trend_degraded_shows_warning(self):
+        """Test that degraded trend shows warning indicator."""
+        from report.generator import generate_report
+
+        data = {
+            "environment": "staging",
+            "scan_date": "2026-03-16T12:00:00Z",
+            "targets": ["https://api.waldoclick.dev"],
+            "http_results": {
+                "https://api.waldoclick.dev": {
+                    "risk_summary": {"score": 45, "risk_level": "high", "issue_counts": {}},
+                    "all_issues": [],
+                },
+            },
+            "email_auth": {},
+            "cloudflare": {},
+            "comparison": {
+                "risk_trend": "degraded",
+                "score_delta": 20,
+                "new_issues": [],
+                "fixed_issues": [],
+                "new_count": 0,
+                "fixed_count": 0,
+            },
+        }
+
+        html = generate_report(data)
+
+        # Should show degraded indicator
+        assert "degraded" in html.lower() or "↑" in html or "+20" in html
+
+    def test_no_comparison_section_when_no_previous_scan(self):
+        """Test that comparison section is gracefully skipped when no comparison data."""
+        from report.generator import generate_report
+
+        data = {
+            "environment": "staging",
+            "scan_date": "2026-03-16T12:00:00Z",
+            "targets": ["https://api.waldoclick.dev"],
+            "http_results": {},
+            "email_auth": {},
+            "cloudflare": {},
+            # No comparison key - first scan
+        }
+
+        html = generate_report(data)
+
+        # Should still produce valid HTML
+        assert "<!DOCTYPE html>" in html
+        # Should not crash, and should not show comparison UI
+        # (absence of comparison-specific elements is fine)
+        assert "FIXED" not in html  # No fixed section when no comparison

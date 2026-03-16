@@ -26,6 +26,15 @@ from .templates import (
     ISSUES_TABLE_TEMPLATE,
     ISSUE_ROW_TEMPLATE,
     ISSUES_NO_DATA_TEMPLATE,
+    # Comparison templates
+    NEW_BADGE,
+    FIXED_BADGE,
+    TREND_IMPROVED,
+    TREND_DEGRADED,
+    TREND_STABLE,
+    COMPARISON_SUMMARY_TEMPLATE,
+    FIXED_ISSUES_SECTION_TEMPLATE,
+    FIXED_ISSUE_ROW_TEMPLATE,
 )
 
 
@@ -44,6 +53,7 @@ def generate_report(data: dict[str, Any]) -> str:
             - http_results: dict[url -> scanner result] (from scanner.scan())
             - email_auth: dict[domain -> analysis result] (from email_auth.analyze_domain())
             - cloudflare: dict (from cloudflare_api.collect_cloudflare_data())
+            - comparison: dict (optional, from compare_scans())
 
     Returns:
         Complete HTML report as string
@@ -54,6 +64,7 @@ def generate_report(data: dict[str, Any]) -> str:
     http_results = data.get("http_results", {})
     email_auth = data.get("email_auth", {})
     cloudflare = data.get("cloudflare", {})
+    comparison = data.get("comparison")
 
     # Aggregate data across all sources
     aggregate = _aggregate_data(http_results, email_auth, cloudflare)
@@ -62,12 +73,27 @@ def generate_report(data: dict[str, Any]) -> str:
     risk_level = aggregate["risk_level"]
     risk_level_style = RISK_LEVEL_STYLES.get(risk_level, RISK_LEVEL_STYLES["none"])
 
+    # Build set of new issue keys for badge rendering
+    new_issue_keys = set()
+    if comparison:
+        for issue in comparison.get("new_issues", []):
+            key = (
+                issue.get("source_module", ""),
+                issue.get("severity", ""),
+                issue.get("message", ""),
+            )
+            new_issue_keys.add(key)
+
     # Render sections
     targets_html = _render_targets(targets)
     http_findings_html = _render_http_findings(http_results)
     email_auth_html = _render_email_auth(email_auth)
     cloudflare_html = _render_cloudflare(cloudflare)
-    issues_table_html = _render_issues_table(aggregate["all_issues"])
+    issues_table_html = _render_issues_table(aggregate["all_issues"], new_issue_keys)
+    
+    # Add comparison section and fixed issues if comparison data present
+    comparison_html = _render_comparison_summary(comparison)
+    fixed_issues_html = _render_fixed_issues(comparison)
 
     # Build final report
     html = REPORT_TEMPLATE.format(
@@ -82,11 +108,11 @@ def generate_report(data: dict[str, Any]) -> str:
         low_count=aggregate["issue_counts"].get("low", 0),
         info_count=aggregate["issue_counts"].get("info", 0),
         total_issues=aggregate["total_issues"],
-        targets_html=targets_html,
+        targets_html=targets_html + comparison_html,
         http_findings_html=http_findings_html,
         email_auth_html=email_auth_html,
         cloudflare_html=cloudflare_html,
-        issues_table_html=issues_table_html,
+        issues_table_html=issues_table_html + fixed_issues_html,
     )
 
     return html
@@ -339,8 +365,16 @@ def _render_cloudflare(cloudflare: dict[str, Any]) -> str:
     )
 
 
-def _render_issues_table(all_issues: list[dict[str, Any]]) -> str:
-    """Render the issues table section."""
+def _render_issues_table(all_issues: list[dict[str, Any]], new_issue_keys: set = None) -> str:
+    """Render the issues table section.
+    
+    Args:
+        all_issues: List of all issues to display
+        new_issue_keys: Set of (source_module, severity, message) tuples for new issues
+    """
+    if new_issue_keys is None:
+        new_issue_keys = set()
+    
     if not all_issues:
         return ISSUES_NO_DATA_TEMPLATE
 
@@ -359,12 +393,75 @@ def _render_issues_table(all_issues: list[dict[str, Any]]) -> str:
         bg_color = SEVERITY_BG_COLORS.get(severity, SEVERITY_BG_COLORS["info"])
         text_color = SEVERITY_COLORS.get(severity, SEVERITY_COLORS["info"])
 
+        # Check if this is a new issue
+        issue_key = (
+            issue.get("source_module", ""),
+            issue.get("severity", ""),
+            issue.get("message", ""),
+        )
+        new_badge = NEW_BADGE if issue_key in new_issue_keys else ""
+
         rows += ISSUE_ROW_TEMPLATE.format(
             severity=severity.upper(),
             bg_color=bg_color,
             text_color=text_color,
             source=source,
-            message=message,
+            message=message + new_badge,
         )
 
     return ISSUES_TABLE_TEMPLATE.format(rows=rows)
+
+
+def _render_comparison_summary(comparison: dict | None) -> str:
+    """Render the comparison summary section."""
+    if not comparison:
+        return ""
+    
+    risk_trend = comparison.get("risk_trend", "stable")
+    score_delta = comparison.get("score_delta", 0)
+    new_count = comparison.get("new_count", 0)
+    fixed_count = comparison.get("fixed_count", 0)
+    
+    # Generate trend indicator
+    if risk_trend == "improved":
+        trend_indicator = TREND_IMPROVED.format(delta=score_delta)
+    elif risk_trend == "degraded":
+        trend_indicator = TREND_DEGRADED.format(delta=score_delta)
+    else:
+        trend_indicator = TREND_STABLE
+    
+    return COMPARISON_SUMMARY_TEMPLATE.format(
+        trend_indicator=trend_indicator,
+        new_count=new_count,
+        fixed_count=fixed_count,
+    )
+
+
+def _render_fixed_issues(comparison: dict | None) -> str:
+    """Render the fixed issues section."""
+    if not comparison:
+        return ""
+    
+    fixed_issues = comparison.get("fixed_issues", [])
+    if not fixed_issues:
+        return ""
+    
+    rows = ""
+    for issue in fixed_issues:
+        severity = issue.get("severity", "info").lower()
+        if severity == "warning":
+            severity = "medium"
+        elif severity == "error":
+            severity = "high"
+        
+        source = issue.get("source_module", "unknown")
+        message = issue.get("message", "No description")
+        
+        rows += FIXED_ISSUE_ROW_TEMPLATE.format(
+            severity=severity.upper(),
+            fixed_badge=FIXED_BADGE,
+            source=source,
+            message=message,
+        )
+    
+    return FIXED_ISSUES_SECTION_TEMPLATE.format(rows=rows)
