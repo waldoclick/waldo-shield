@@ -14,16 +14,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### DNS/Email Checks
 
-- [ ] **DNS-01**: Scanner validates SPF records for waldo.click and waldoclick.dev
-- [ ] **DNS-02**: Scanner validates DKIM records for both domains
-- [ ] **DNS-03**: Scanner validates DMARC policies for both domains
-- [ ] **DNS-04**: Scanner checks CAA records match expected CAs (pki.goog)
+- [x] **DNS-01**: Scanner validates SPF records for waldo.click and waldoclick.dev
+- [x] **DNS-02**: Scanner validates DKIM records for both domains
+- [x] **DNS-03**: Scanner validates DMARC policies for both domains
+- [x] **DNS-04**: Scanner checks CAA records match expected CAs (pki.goog)
 
 ### Cloudflare Integration
 
-- [ ] **CF-01**: System retrieves WAF events from Cloudflare API for both zones
-- [ ] **CF-02**: System retrieves traffic analytics (requests, blocked percentage)
-- [ ] **CF-03**: System retrieves configured rate limiting rules
+- [x] **CF-01**: System retrieves WAF events from Cloudflare API for both zones
+- [x] **CF-02**: System retrieves traffic analytics (requests, blocked percentage)
+- [x] **CF-03**: System retrieves configured rate limiting rules
 
 ### Report Generation
 
@@ -81,13 +81,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | CONF-01 | Phase 1 | Complete |
 | CONF-02 | Phase 1 | Complete |
-| DNS-01 | Phase 2 | Pending |
-| DNS-02 | Phase 2 | Pending |
-| DNS-03 | Phase 2 | Pending |
-| DNS-04 | Phase 2 | Pending |
-| CF-01 | Phase 2 | Pending |
-| CF-02 | Phase 2 | Pending |
-| CF-03 | Phase 2 | Pending |
+| DNS-01 | Phase 2 | Complete |
+| DNS-02 | Phase 2 | Complete |
+| DNS-03 | Phase 2 | Complete |
+| DNS-04 | Phase 2 | Complete |
+| CF-01 | Phase 2 | Complete |
+| CF-02 | Phase 2 | Complete |
+| CF-03 | Phase 2 | Complete |
 | RPT-01 | Phase 3 | Pending |
 | RPT-02 | Phase 3 | Pending |
 | RPT-03 | Phase 3 | Pending |
@@ -104,4 +104,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after completing Phase 1*
+*Last updated: 2026-03-16 after completing Phase 2*
