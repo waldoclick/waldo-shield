@@ -74,7 +74,12 @@ Plans:
 4. Email is sent via Mailgun only when threshold exceeded or new critical/high issues found
 5. Cron job execution returns non-zero exit code when critical/high issues exist
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — HTML report generator with executive summary
+- [ ] 03-02-PLAN.md — Historical comparison and delta highlighting
+- [ ] 03-03-PLAN.md — Email delivery via Mailgun and cron operations
 
 ---
 
@@ -84,7 +89,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Config | 1/1 | Complete    | 2026-03-16 |
 | 2. Data Collection | 2/2 | Complete    | 2026-03-16 |
-| 3. Report & Delivery | 0/? | Not started | - |
+| 3. Report & Delivery | 0/3 | In progress | - |
 
 ---
 
