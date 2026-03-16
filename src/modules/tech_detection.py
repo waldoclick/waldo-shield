@@ -10,95 +10,38 @@ from urllib.parse import urlparse, urljoin
 
 
 TECH_SIGNATURES = {
-    # CMS
-    "WordPress": [
-        {"type": "header", "header": "x-powered-by", "pattern": r"wordpress"},
-        {"type": "body", "pattern": r'wp-content|wp-includes|/wp-json/'},
-        {"type": "meta", "name": "generator", "pattern": r"WordPress"},
-        {"type": "url_probe", "path": "/wp-login.php"},
-    ],
-    "Drupal": [
-        {"type": "header", "header": "x-generator", "pattern": r"drupal"},
-        {"type": "body", "pattern": r'Drupal\.settings|sites/default/files'},
-        {"type": "meta", "name": "generator", "pattern": r"Drupal"},
-    ],
-    "Joomla": [
-        {"type": "body", "pattern": r'/media/jui/|Joomla!'},
-        {"type": "meta", "name": "generator", "pattern": r"Joomla"},
-    ],
-    "Shopify": [
-        {"type": "header", "header": "x-shopify-stage", "pattern": r".*"},
-        {"type": "body", "pattern": r'cdn\.shopify\.com|Shopify\.theme'},
-    ],
-    "Wix": [
-        {"type": "body", "pattern": r'static\.parastorage\.com|wix\.com'},
-    ],
-    # Frameworks / Languages
-    "Laravel": [
-        {"type": "cookie", "name": "laravel_session"},
-        {"type": "header", "header": "x-powered-by", "pattern": r"php"},
-        {"type": "body", "pattern": r'laravel'},
-    ],
-    "Django": [
-        {"type": "cookie", "name": "csrftoken"},
-        {"type": "header", "header": "x-frame-options", "pattern": r"SAMEORIGIN"},
-    ],
-    "Ruby on Rails": [
-        {"type": "header", "header": "x-powered-by", "pattern": r"phusion passenger"},
-        {"type": "cookie", "name": "_session_id"},
-    ],
-    "ASP.NET": [
-        {"type": "header", "header": "x-powered-by", "pattern": r"ASP\.NET"},
-        {"type": "header", "header": "x-aspnet-version", "pattern": r".*"},
-        {"type": "cookie", "name": "ASP.NET_SessionId"},
+    # Stack: Strapi (api.*), Nuxt.js (www.*), internal dashboard (dashboard.*)
+    "Nuxt.js": [
+        {"type": "body", "pattern": r'__nuxt|/_nuxt/'},
     ],
     "Next.js": [
         {"type": "header", "header": "x-powered-by", "pattern": r"Next\.js"},
         {"type": "body", "pattern": r'__NEXT_DATA__|/_next/static/'},
     ],
-    "Nuxt.js": [
-        {"type": "body", "pattern": r'__nuxt|/_nuxt/'},
-    ],
-    # JS Libraries
-    "React": [
-        {"type": "body", "pattern": r'react\.development\.js|react\.production\.min\.js|data-reactroot|__REACT'},
-    ],
     "Vue.js": [
         {"type": "body", "pattern": r'vue\.min\.js|vue\.js|__vue__'},
     ],
-    "Angular": [
-        {"type": "body", "pattern": r'ng-version=|angular\.min\.js'},
+    "React": [
+        {"type": "body", "pattern": r'react\.development\.js|react\.production\.min\.js|data-reactroot|__REACT'},
     ],
-    "jQuery": [
-        {"type": "body", "pattern": r'jquery[\.\-](\d+[\.\d]+)?\.min\.js|jquery\.js'},
+    "Strapi": [
+        {"type": "body", "pattern": r'strapi'},
+        {"type": "header", "header": "x-powered-by", "pattern": r"strapi"},
     ],
-    # Servers
+    # Servers / Proxy
     "Nginx": [
         {"type": "header", "header": "server", "pattern": r"nginx"},
-    ],
-    "Apache": [
-        {"type": "header", "header": "server", "pattern": r"apache"},
     ],
     "Cloudflare": [
         {"type": "header", "header": "server", "pattern": r"cloudflare"},
         {"type": "header", "header": "cf-ray", "pattern": r".*"},
     ],
-    "Vercel": [
-        {"type": "header", "header": "x-vercel-id", "pattern": r".*"},
-    ],
-    "AWS CloudFront": [
-        {"type": "header", "header": "via", "pattern": r"cloudfront"},
-        {"type": "header", "header": "x-amz-cf-id", "pattern": r".*"},
-    ],
-    # Analytics / Tracking
+    # Analytics
     "Google Analytics": [
         {"type": "body", "pattern": r'google-analytics\.com|gtag\(|ga\.js|analytics\.js'},
     ],
     "Google Tag Manager": [
         {"type": "body", "pattern": r'googletagmanager\.com/gtm\.js'},
-    ],
-    "Facebook Pixel": [
-        {"type": "body", "pattern": r'connect\.facebook\.net.*fbevents\.js'},
     ],
 }
 
@@ -205,21 +148,31 @@ def analyze(url: str) -> dict:
                     "recommendation": f"Update {lib_info['library']} to the latest stable version.",
                 })
 
-        # WordPress specific checks
-        if "WordPress" in detected:
-            result["issues"].append({
-                "severity": "info",
-                "message": "WordPress detected. Ensure core, themes and plugins are up to date.",
-                "recommendation": "Keep WordPress updated. Disable XML-RPC if not needed. Use a WAF.",
-            })
-
         # Exposed admin panels
+        ZERO_TRUST_INDICATORS = ["cloudflareaccess.com", "cdn-cgi/access"]
         parsed = urlparse(url)
-        admin_paths = ["/admin", "/wp-admin", "/administrator", "/admin/login", "/user/login"]
+        admin_paths = ["/admin", "/admin/login"]
         for path in admin_paths:
             try:
                 admin_url = f"{parsed.scheme}://{parsed.netloc}{path}"
                 resp = requests.get(admin_url, timeout=5, allow_redirects=False)
+
+                # Skip Zero Trust redirects — not a real exposure
+                if resp.status_code in (301, 302, 303, 307, 308):
+                    location = resp.headers.get("location", "")
+                    if any(i in location for i in ZERO_TRUST_INDICATORS):
+                        continue
+
+                # For www/frontend sites: a 200 on /admin is likely a Nuxt-rendered 404
+                # Skip if the page title follows the Nuxt site layout pattern (e.g. "Admin | SiteName")
+                if resp.status_code == 200:
+                    body = resp.text
+                    if re.search(r'<title>[^<]+\|[^<]+</title>', body, re.IGNORECASE):
+                        continue
+                    # Also skip if it has Nuxt-specific markers
+                    if '__nuxt' in body or '/_nuxt/' in body:
+                        continue
+
                 if resp.status_code in (200, 301, 302):
                     result["issues"].append({
                         "severity": "medium",
