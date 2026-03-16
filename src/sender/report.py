@@ -296,7 +296,7 @@ def send_report(dry_run: bool = False) -> bool:
     zip_filename = f"reports_{datetime.now().strftime('%Y%m%d')}.zip"
     
     # Prepare email
-    subject = f"Security Report - {config.domain} - {datetime.now().strftime('%Y-%m-%d')}"
+    subject = f"Waldo.click®: Security Monitor {datetime.now().strftime('%Y-%m-%d')}"
     
     if dry_run:
         logging.info(f"DRY RUN - would send email to: {config.recipients}")
