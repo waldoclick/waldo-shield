@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-03-16T16:51:47.694Z"
+status: executing
+last_updated: "2026-03-16T17:10:20Z"
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # State: waldo-shield
@@ -21,20 +21,20 @@ progress:
 
 **Core Value:** Visibilidad continua del estado de seguridad de waldo.click — staging y producción — sin intervención manual.
 
-**Current Focus:** Phase 1 complete. Config module and CLI entry point working. Ready for Phase 2.
+**Current Focus:** Phase 2 complete. DNS/email auth and Cloudflare API modules working. Ready for Phase 3.
 
 ---
 
 ## Current Position
 
-**Phase:** 01-foundation-config  
-**Plan:** Complete (1/1)  
-**Status:** Ready to plan
+**Phase:** 02-data-collection  
+**Plan:** Complete (2/2)  
+**Status:** Ready for Phase 3
 
 **Progress:**
 ```
 Phase 1: Foundation & Config  [X] Complete (2026-03-16)
-Phase 2: Data Collection      [ ] Not started
+Phase 2: Data Collection      [X] Complete (2026-03-16)
 Phase 3: Report & Delivery    [ ] Not started
 ```
 
@@ -44,14 +44,16 @@ Phase 3: Report & Delivery    [ ] Not started
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 1 |
+| Plans completed | 4 |
 | Plans failed | 0 |
-| Requirements delivered | 2/17 |
-| Phases completed | 1/3 |
+| Requirements delivered | 9/17 |
+| Phases completed | 2/3 |
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 01-01 | Config Module | 4min | 3 | 8 |
+| 02-01 | DNS/Email Auth | 4min | 2 | 4 |
+| 02-02 | Cloudflare API | 4min | 3 | 7 |
 
 ---
 
@@ -66,6 +68,9 @@ Phase 3: Report & Delivery    [ ] Not started
 | Reports + Email + Ops in same phase | All part of "delivery" capability, tightly coupled | 2026-03-16 |
 | Frozen dataclasses for config | Prevents accidental mutation, type-safe | 2026-03-16 |
 | Fail-fast secret validation | Validate all secrets at Config.load(), not lazily | 2026-03-16 |
+| GraphQL for Cloudflare analytics | Richer data than REST, supports aggregation | 2026-03-16 |
+| Error dict pattern for API calls | Return {error: str} instead of raising - graceful degradation | 2026-03-16 |
+| Zone IDs from env-specific vars | CLOUDFLARE_ZONE_ID_STAGING/PROD for multi-environment support | 2026-03-16 |
 
 ### Research Notes
 
@@ -79,6 +84,8 @@ Phase 3: Report & Delivery    [ ] Not started
 - **Config.load(env_name):** Unified config access pattern
 - **EnvironmentError for missing secrets:** Clear error messages listing all missing vars
 - **pytest fixtures for env var isolation:** clean_env and mock_secrets fixtures
+- **collect_*_data() functions:** Single entry point per data source for report phase
+- **Error dict not raise:** API modules return {error: str} on failure, not exceptions
 
 ### Technical Debt
 
@@ -91,8 +98,8 @@ None yet.
 ### Last Session
 
 **Date:** 2026-03-16  
-**Completed:** Phase 1 Plan 01 - Config module and CLI entry point  
-**Next:** Plan Phase 2 (Data Collection - DNS/email checks and Cloudflare API)
+**Completed:** Phase 2 Plan 02 - Cloudflare API integration  
+**Next:** Plan Phase 3 (Report & Delivery - HTML reports, email, cron)
 
 ### Blockers
 
@@ -106,4 +113,4 @@ None.
 
 ---
 
-*Last updated: 2026-03-16 after completing 01-01-PLAN.md*
+*Last updated: 2026-03-16 after completing 02-01-PLAN.md (re-execution)*

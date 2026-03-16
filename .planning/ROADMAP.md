@@ -9,7 +9,7 @@
 ## Phases
 
 - [x] **Phase 1: Foundation & Config** - Environment-aware configuration and credential management
-- [ ] **Phase 2: Data Collection** - DNS/email checks and Cloudflare API integration
+- [x] **Phase 2: Data Collection** - DNS/email checks and Cloudflare API integration
 - [ ] **Phase 3: Report & Delivery** - HTML report generation, email delivery, and cron operations
 
 ---
@@ -51,11 +51,11 @@ Plans:
 4. System retrieves traffic analytics (total requests, blocked percentage) from Cloudflare
 5. System retrieves configured rate limiting rules from Cloudflare
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md — DNS/email authentication module (SPF, DKIM, DMARC, CAA)
-- [ ] 02-02-PLAN.md — Cloudflare API integration (WAF events, traffic analytics, rate limits)
+- [x] 02-01-PLAN.md — DNS/email authentication module (SPF, DKIM, DMARC, CAA)
+- [x] 02-02-PLAN.md — Cloudflare API integration (WAF events, traffic analytics, rate limits)
 
 ---
 
@@ -83,7 +83,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Config | 1/1 | Complete    | 2026-03-16 |
-| 2. Data Collection | 0/2 | In Progress | - |
+| 2. Data Collection | 2/2 | Complete    | 2026-03-16 |
 | 3. Report & Delivery | 0/? | Not started | - |
 
 ---
