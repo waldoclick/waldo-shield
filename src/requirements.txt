@@ -6,3 +6,5 @@ lxml>=4.9.3
 python-whois>=0.8.0
 python-dotenv>=1.2.2
 pytest>=8.0.0
+checkdmarc>=5.13.4
+cloudflare>=4.3.1
