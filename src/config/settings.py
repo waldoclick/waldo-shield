@@ -12,6 +12,7 @@ class EnvironmentConfig:
     targets: List[str]
     recipients: List[str]
     mailgun_domain: str
+    zone_id_env_var: str  # Environment variable name for Cloudflare zone ID
 
 
 ENVIRONMENTS = {
@@ -24,6 +25,7 @@ ENVIRONMENTS = {
         ],
         recipients=["security@waldoclick.dev"],
         mailgun_domain="waldoclick.dev",
+        zone_id_env_var="CLOUDFLARE_ZONE_ID_STAGING",
     ),
     "prod": EnvironmentConfig(
         name="prod",
@@ -34,6 +36,7 @@ ENVIRONMENTS = {
         ],
         recipients=["security@waldo.click"],
         mailgun_domain="waldo.click",
+        zone_id_env_var="CLOUDFLARE_ZONE_ID_PROD",
     ),
 }
 
