@@ -29,7 +29,7 @@
 2. Running `python src/monitor.py --env prod` loads production targets and recipients
 3. API tokens are read from environment variables, never appear in code or logs
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Config module with environment-specific settings and CLI entry point
@@ -78,7 +78,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Config | 1/1 | Complete | 2026-03-16 |
+| 1. Foundation & Config | 1/1 | Complete    | 2026-03-16 |
 | 2. Data Collection | 0/? | Not started | - |
 | 3. Report & Delivery | 0/? | Not started | - |
 
