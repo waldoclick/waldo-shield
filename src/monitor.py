@@ -35,6 +35,7 @@ from modules.email_auth import analyze_domain
 from modules.cloudflare_api import collect_cloudflare_data
 from modules.github_issues import get_open_issues
 from modules.sentry_issues import get_sentry_issues
+from modules.codacy_issues import get_codacy_issues
 from report import generate_report
 from report.comparison import compare_scans
 from report.storage import load_latest_scan, save_scan
@@ -119,6 +120,19 @@ def collect_all_data(config: Config) -> dict:
         logging.error(f"Failed to fetch Sentry issues: {e}")
         sentry_issues = {"error": str(e)}
     
+    # Codacy issues
+    logging.info(f"Fetching Codacy issues ({config.codacy_org}/{config.codacy_repo})")
+    try:
+        codacy_issues = get_codacy_issues(
+            config.codacy_token,
+            config.codacy_provider,
+            config.codacy_org,
+            config.codacy_repo,
+        )
+    except Exception as e:
+        logging.error(f"Failed to fetch Codacy issues: {e}")
+        codacy_issues = {"error": str(e)}
+    
     return {
         "domain": config.domain,
         "environment": config.environment,
@@ -128,6 +142,7 @@ def collect_all_data(config: Config) -> dict:
         "cloudflare": cloudflare,
         "github_issues": github_issues,
         "sentry_issues": sentry_issues,
+        "codacy_issues": codacy_issues,
     }
 
 

@@ -47,6 +47,12 @@ from .templates import (
     SENTRY_ISSUE_ROW_TEMPLATE,
     SENTRY_NO_DATA_TEMPLATE,
     SENTRY_ERROR_TEMPLATE,
+    # Codacy templates
+    CODACY_SECTION_TEMPLATE,
+    CODACY_CATEGORY_ROW_TEMPLATE,
+    CODACY_ISSUE_ROW_TEMPLATE,
+    CODACY_NO_DATA_TEMPLATE,
+    CODACY_ERROR_TEMPLATE,
 )
 
 
@@ -95,6 +101,7 @@ def generate_report(data: dict[str, Any]) -> str:
     # Support both github/sentry and github_issues/sentry_issues keys
     github = data.get("github") or data.get("github_issues", {})
     sentry = data.get("sentry") or data.get("sentry_issues", {})
+    codacy = data.get("codacy") or data.get("codacy_issues", {})
     
     # Transform github_issues format to expected github format
     if github and "total" in github and "open_count" not in github:
@@ -132,6 +139,7 @@ def generate_report(data: dict[str, Any]) -> str:
     cloudflare_html = _render_cloudflare(cloudflare)
     github_html = _render_github(github)
     sentry_html = _render_sentry(sentry)
+    codacy_html = _render_codacy(codacy)
     issues_table_html = _render_issues_table(aggregate["all_issues"], new_issue_keys)
     
     # Add comparison section and fixed issues if comparison data present
@@ -157,6 +165,7 @@ def generate_report(data: dict[str, Any]) -> str:
         cloudflare_html=cloudflare_html,
         github_html=github_html,
         sentry_html=sentry_html,
+        codacy_html=codacy_html,
         issues_table_html=issues_table_html + fixed_issues_html,
     )
 
@@ -696,3 +705,74 @@ def _get_contrast_color(hex_color: str) -> str:
         return "#000" if luminance > 0.5 else "#fff"
     except Exception:
         return "#000"
+
+
+def _render_codacy(codacy: dict[str, Any]) -> str:
+    """Render the Codacy code quality section."""
+    if not codacy:
+        return CODACY_NO_DATA_TEMPLATE
+
+    # Check for errors
+    if codacy.get("error"):
+        return CODACY_ERROR_TEMPLATE.format(error=codacy["error"])
+
+    total = codacy.get("total", 0)
+    if total == 0:
+        return CODACY_NO_DATA_TEMPLATE
+
+    by_level = codacy.get("by_level", {})
+    by_category = codacy.get("by_category", {})
+    issues = codacy.get("issues", [])
+    organization = codacy.get("organization", "")
+    repository = codacy.get("repository", "")
+
+    # Level colors
+    level_colors = {
+        "Error": {"color": "#dc3545", "bg": "#f8d7da"},
+        "High": {"color": "#fd7e14", "bg": "#ffe5d0"},
+        "Warning": {"color": "#ffc107", "bg": "#fff3cd"},
+        "Info": {"color": "#17a2b8", "bg": "#d1ecf1"},
+    }
+
+    # Render categories
+    categories_html = ""
+    for category, count in sorted(by_category.items(), key=lambda x: -x[1]):
+        categories_html += CODACY_CATEGORY_ROW_TEMPLATE.format(
+            category=category,
+            count=count,
+        )
+
+    # Render sample issues (top 10)
+    issues_html = ""
+    if issues:
+        issues_html = '<p style="margin: 15px 0 8px 0; color: #475569; font-size: 12px; font-weight: 600;">Recent Issues:</p>'
+        for issue in issues[:10]:
+            level = issue.get("level", "Warning")
+            level_style = level_colors.get(level, level_colors["Warning"])
+            
+            file_path = issue.get("file_path", "")
+            # Truncate long paths
+            if len(file_path) > 40:
+                file_path = "..." + file_path[-37:]
+            
+            issues_html += CODACY_ISSUE_ROW_TEMPLATE.format(
+                title=issue.get("title", "Unknown issue")[:70],
+                level=level,
+                level_color=level_style["color"],
+                level_bg=level_style["bg"],
+                file_path=file_path,
+                line=issue.get("line", "?"),
+                tool=issue.get("tool", "unknown"),
+            )
+
+    return CODACY_SECTION_TEMPLATE.format(
+        total_count=total,
+        organization=organization,
+        repository=repository,
+        error_count=by_level.get("Error", 0),
+        high_count=by_level.get("High", 0),
+        warning_count=by_level.get("Warning", 0),
+        info_count=by_level.get("Info", 0),
+        categories_html=categories_html,
+        issues_html=issues_html,
+    )

@@ -21,6 +21,10 @@ class Config:
     sentry_token: str
     sentry_org: str
     sentry_env: str
+    codacy_token: str
+    codacy_provider: str
+    codacy_org: str
+    codacy_repo: str
     recipients: List[str]
 
     @property
@@ -72,6 +76,9 @@ class Config:
             "SENTRY_AUTH_TOKEN",
             "SENTRY_ORG",
             "SENTRY_ENV",
+            "CODACY_API_TOKEN",
+            "CODACY_ORG",
+            "CODACY_REPO",
         ]
 
         values = {}
@@ -96,6 +103,9 @@ class Config:
         mailgun_domain = domain
         recipients = [f"security@{domain}"]
 
+        # Codacy provider defaults to 'gh' (GitHub)
+        codacy_provider = os.environ.get("CODACY_PROVIDER", "gh")
+
         return cls(
             domain=domain,
             cloudflare_token=values["CLOUDFLARE_API_TOKEN"],
@@ -106,5 +116,9 @@ class Config:
             sentry_token=values["SENTRY_AUTH_TOKEN"],
             sentry_org=values["SENTRY_ORG"],
             sentry_env=values["SENTRY_ENV"],
+            codacy_token=values["CODACY_API_TOKEN"],
+            codacy_provider=codacy_provider,
+            codacy_org=values["CODACY_ORG"],
+            codacy_repo=values["CODACY_REPO"],
             recipients=recipients,
         )

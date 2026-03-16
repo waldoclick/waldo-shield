@@ -149,6 +149,14 @@ REPORT_TEMPLATE = """<!DOCTYPE html>
                         </td>
                     </tr>
 
+                    <!-- Codacy Code Quality -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #1a1a2e; font-size: 18px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Codacy Code Quality</h2>
+                            {codacy_html}
+                        </td>
+                    </tr>
+
                     <!-- All Issues Table -->
                     <tr>
                         <td style="padding: 0 30px 30px 30px;">
@@ -504,6 +512,88 @@ SENTRY_ERROR_TEMPLATE = """<table role="presentation" cellspacing="0" cellpaddin
     <tr>
         <td style="background-color: #f8d7da; padding: 15px; border-radius: 8px;">
             <p style="margin: 0; color: #721c24; font-size: 14px;">Error fetching Sentry issues: {error}</p>
+        </td>
+    </tr>
+</table>"""
+
+# Codacy Issues section
+CODACY_SECTION_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="background-color: #f8fafc; padding: 15px; border-radius: 8px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 15px;">
+                <tr>
+                    <td>
+                        <span style="color: #1a1a2e; font-size: 14px; font-weight: 600;">Code Quality Issues:</span>
+                        <span style="color: #fd7e14; font-size: 14px; font-weight: 700; margin-left: 5px;">{total_count}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="https://app.codacy.com/gh/{organization}/{repository}/issues" style="color: #3b82f6; font-size: 12px; text-decoration: none;">View in Codacy &rarr;</a>
+                    </td>
+                </tr>
+            </table>
+            
+            <!-- By Level -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 15px;">
+                <tr>
+                    <td style="text-align: center; padding: 8px;">
+                        <p style="margin: 0; color: #dc3545; font-size: 20px; font-weight: 700;">{error_count}</p>
+                        <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px; text-transform: uppercase;">Error</p>
+                    </td>
+                    <td style="text-align: center; padding: 8px;">
+                        <p style="margin: 0; color: #fd7e14; font-size: 20px; font-weight: 700;">{high_count}</p>
+                        <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px; text-transform: uppercase;">High</p>
+                    </td>
+                    <td style="text-align: center; padding: 8px;">
+                        <p style="margin: 0; color: #ffc107; font-size: 20px; font-weight: 700;">{warning_count}</p>
+                        <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px; text-transform: uppercase;">Warning</p>
+                    </td>
+                    <td style="text-align: center; padding: 8px;">
+                        <p style="margin: 0; color: #17a2b8; font-size: 20px; font-weight: 700;">{info_count}</p>
+                        <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px; text-transform: uppercase;">Info</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <!-- By Category -->
+            <p style="margin: 0 0 8px 0; color: #475569; font-size: 12px; font-weight: 600;">By Category:</p>
+            {categories_html}
+            
+            <!-- Sample Issues -->
+            {issues_html}
+        </td>
+    </tr>
+</table>"""
+
+CODACY_CATEGORY_ROW_TEMPLATE = """<span style="display: inline-block; background-color: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin: 2px 4px 2px 0;">{category}: {count}</span>"""
+
+CODACY_ISSUE_ROW_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 6px;">
+    <tr>
+        <td style="padding: 8px; background-color: #fff; border-radius: 4px; border-left: 3px solid {level_color};">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td>
+                        <span style="color: #1a1a2e; font-size: 12px;">{title}</span>
+                    </td>
+                    <td style="text-align: right; width: 70px;">
+                        <span style="background-color: {level_bg}; color: {level_color}; padding: 2px 6px; border-radius: 10px; font-size: 10px; text-transform: uppercase;">{level}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 11px;">{file_path}:{line} &middot; {tool}</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>"""
+
+CODACY_NO_DATA_TEMPLATE = """<p style="color: #28a745; font-size: 14px; margin: 0;">No code quality issues - great job!</p>"""
+
+CODACY_ERROR_TEMPLATE = """<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="background-color: #f8d7da; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0; color: #721c24; font-size: 14px;">Error fetching Codacy issues: {error}</p>
         </td>
     </tr>
 </table>"""
