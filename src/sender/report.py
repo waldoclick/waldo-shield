@@ -101,6 +101,7 @@ def generate_html_report(reports: dict, domain: str) -> str:
     sentry_report = reports.get("sentry", {})
     codacy_report = reports.get("codacy", {})
     websentry_report = reports.get("websentry", {})
+    dependencies_report = reports.get("dependencies", {})
     
     # Count issues
     http_issues = 0
@@ -114,6 +115,9 @@ def generate_html_report(reports: dict, domain: str) -> str:
     websentry_failed = 0
     for url_data in websentry_report.get("results", {}).values():
         websentry_failed += len(url_data.get("failed_checks", []))
+    
+    deps_vulnerable = dependencies_report.get("vulnerable_packages", 0)
+    deps_total = dependencies_report.get("total_packages", 0)
     
     # Generate HTML
     html = f"""<!DOCTYPE html>
@@ -149,6 +153,11 @@ def generate_html_report(reports: dict, domain: str) -> str:
                     <p style="margin: 0; color: #fd7e14; font-size: 24px; font-weight: bold;">{codacy_issues}</p>
                     <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Codacy Issues</p>
                 </td>
+                <td style="width: 2%;"></td>
+                <td style="padding: 15px; background-color: #f8fafc; border-radius: 8px; text-align: center; width: 20%;">
+                    <p style="margin: 0; color: {"#28a745" if deps_vulnerable == 0 else "#dc3545"}; font-size: 24px; font-weight: bold;">{deps_vulnerable}</p>
+                    <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Vuln Deps</p>
+                </td>
             </tr>
         </table>
         
@@ -163,6 +172,7 @@ def generate_html_report(reports: dict, domain: str) -> str:
         "github": "GitHub Issues",
         "sentry": "Sentry Errors",
         "codacy": "Codacy Code Quality",
+        "dependencies": "Dependency Audit",
         "websentry": "WebSentry External Scan",
     }
     

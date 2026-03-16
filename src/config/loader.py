@@ -27,6 +27,8 @@ class Config:
     codacy_repo: str
     websentry_api_key: str
     report_zip_password: str
+    github_repo: str
+    github_branch: str
     recipients: List[str]
 
     @property
@@ -116,6 +118,10 @@ class Config:
         
         # ZIP password for report attachments (defaults to domain)
         report_zip_password = os.environ.get("REPORT_ZIP_PASSWORD") or domain
+        
+        # GitHub repo and branch for dependency audit
+        github_repo = os.environ.get("GITHUB_REPO", "waldoclick/waldo-project")
+        github_branch = os.environ.get("GITHUB_BRANCH", "main")
 
         return cls(
             domain=domain,
@@ -133,5 +139,7 @@ class Config:
             codacy_repo=values["CODACY_REPO"],
             websentry_api_key=websentry_api_key,
             report_zip_password=report_zip_password,
+            github_repo=github_repo,
+            github_branch=github_branch,
             recipients=recipients,
         )
