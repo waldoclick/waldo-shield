@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-16T17:50:42Z"
+last_updated: "2026-03-16T17:57:53Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # State: waldo-shield
@@ -21,21 +21,21 @@ progress:
 
 **Core Value:** Visibilidad continua del estado de seguridad de waldo.click — staging y producción — sin intervención manual.
 
-**Current Focus:** Phase 3 in progress. HTML report generator complete. Ready for email delivery.
+**Current Focus:** Phase 3 in progress. Historical comparison complete. Ready for email delivery.
 
 ---
 
 ## Current Position
 
 **Phase:** 03-report-delivery  
-**Plan:** 02 (ready to execute)  
-**Status:** In progress (1/3 plans complete)
+**Plan:** 03 (ready to execute)  
+**Status:** In progress (2/3 plans complete)
 
 **Progress:**
 ```
 Phase 1: Foundation & Config  [X] Complete (2026-03-16)
 Phase 2: Data Collection      [X] Complete (2026-03-16)
-Phase 3: Report & Delivery    [~] In progress (1/3 plans)
+Phase 3: Report & Delivery    [~] In progress (2/3 plans)
 ```
 
 ---
@@ -44,9 +44,9 @@ Phase 3: Report & Delivery    [~] In progress (1/3 plans)
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 5 |
+| Plans completed | 6 |
 | Plans failed | 0 |
-| Requirements delivered | 11/17 |
+| Requirements delivered | 13/17 |
 | Phases completed | 2/3 |
 
 | Phase | Plan | Duration | Tasks | Files |
@@ -55,6 +55,7 @@ Phase 3: Report & Delivery    [~] In progress (1/3 plans)
 | 02-01 | DNS/Email Auth | 4min | 2 | 4 |
 | 02-02 | Cloudflare API | 4min | 3 | 7 |
 | 03-01 | HTML Report Generator | 4min | 3 | 5 |
+| 03-02 | Historical Comparison | 4min | 3 | 6 |
 
 ---
 
@@ -74,6 +75,8 @@ Phase 3: Report & Delivery    [~] In progress (1/3 plans)
 | Zone IDs from env-specific vars | CLOUDFLARE_ZONE_ID_STAGING/PROD for multi-environment support | 2026-03-16 |
 | Table-based HTML for email | Email clients have poor CSS support; tables work everywhere | 2026-03-16 |
 | Inline CSS only | No <style> blocks (Outlook strips them); every element has inline styles | 2026-03-16 |
+| Issue matching by tuple | (source_module, severity, message) for comparing issues between scans | 2026-03-16 |
+| Score delta convention | Positive = degraded (risk up), negative = improved (risk down) | 2026-03-16 |
 
 ### Research Notes
 
@@ -91,6 +94,9 @@ Phase 3: Report & Delivery    [~] In progress (1/3 plans)
 - **Error dict not raise:** API modules return {error: str} on failure, not exceptions
 - **generate_report(data) → str:** Single entry point for HTML report generation
 - **Section renderers:** _render_http_findings(), _render_email_auth(), _render_cloudflare(), _render_issues_table()
+- **save_scan(env, data) → Path:** Persist scan results to reports/{env}/scan_{timestamp}.json
+- **load_latest_scan(env) → dict | None:** Load most recent scan for comparison
+- **compare_scans(current, previous) → dict | None:** Detect new/fixed issues and trend
 
 ### Technical Debt
 
@@ -103,8 +109,8 @@ None yet.
 ### Last Session
 
 **Date:** 2026-03-16  
-**Completed:** Phase 3 Plan 01 (HTML Report Generator)  
-**Next:** Execute Phase 3 Plan 02 (Email delivery via Mailgun)
+**Completed:** Phase 3 Plan 02 (Historical Comparison)  
+**Next:** Execute Phase 3 Plan 03 (Email delivery via Mailgun)
 
 ### Blockers
 
@@ -118,4 +124,4 @@ None.
 
 ---
 
-*Last updated: 2026-03-16 after completing 03-01-PLAN.md*
+*Last updated: 2026-03-16 after completing 03-02-PLAN.md*
