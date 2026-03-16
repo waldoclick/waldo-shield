@@ -61,6 +61,33 @@ DANGEROUS_HEADERS = {
     "x-aspnetmvc-version": "Exposes ASP.NET MVC version.",
 }
 
+# Endpoints that MUST be protected by Cloudflare Zero Trust
+ZERO_TRUST_REQUIRED = [
+    "dashboard.waldoclick.dev",
+    "dashboard.waldo.click",
+    "api.waldoclick.dev/admin",
+    "api.waldo.click/admin",
+]
+
+
+def _requires_zero_trust(url: str) -> bool:
+    """Check if URL requires Zero Trust protection."""
+    parsed = urlparse(url)
+    full_path = parsed.netloc + parsed.path
+    for protected in ZERO_TRUST_REQUIRED:
+        if full_path.startswith(protected) or full_path == protected.rstrip("/"):
+            return True
+    return False
+
+
+def _is_zero_trust_redirect(redirect_chain: list) -> bool:
+    """Check if redirect chain goes to Cloudflare Access."""
+    for redirect in redirect_chain:
+        redirect_url = redirect.get("url", "")
+        if "cloudflareaccess.com" in redirect_url:
+            return True
+    return False
+
 
 def analyze(url: str) -> dict:
     result = {
@@ -71,11 +98,18 @@ def analyze(url: str) -> dict:
         "security_headers": {},
         "missing_headers": [],
         "dangerous_headers": {},
+        "zero_trust": {
+            "required": False,
+            "protected": False,
+        },
         "score": 0,
         "max_score": len(SECURITY_HEADERS),
         "issues": [],
         "error": None,
     }
+
+    requires_zt = _requires_zero_trust(url)
+    result["zero_trust"]["required"] = requires_zt
 
     try:
         session = requests.Session()
@@ -87,6 +121,31 @@ def analyze(url: str) -> dict:
                 "url": r.url,
                 "status_code": r.status_code,
             })
+        
+        # Check Zero Trust protection for required endpoints
+        if requires_zt:
+            is_protected = _is_zero_trust_redirect(result["redirect_chain"])
+            result["zero_trust"]["protected"] = is_protected
+            
+            if is_protected:
+                # Protected by Zero Trust - skip header analysis, report success
+                result["status_code"] = response.status_code
+                result["issues"].append({
+                    "severity": "info",
+                    "header": "zero-trust",
+                    "message": "Endpoint protected by Cloudflare Zero Trust",
+                    "recommendation": None,
+                })
+                return result
+            else:
+                # NOT protected - this is critical!
+                result["issues"].append({
+                    "severity": "critical",
+                    "header": "zero-trust",
+                    "message": f"CRITICAL: Protected endpoint is accessible without Zero Trust authentication!",
+                    "recommendation": "Configure Cloudflare Zero Trust to protect this endpoint immediately.",
+                })
+                # Continue with header analysis to report full state
 
         result["status_code"] = response.status_code
         headers_lower = {k.lower(): v for k, v in response.headers.items()}
@@ -118,6 +177,12 @@ def analyze(url: str) -> dict:
         # Check dangerous headers
         for header, reason in DANGEROUS_HEADERS.items():
             if header in headers_lower:
+                header_value = headers_lower[header].lower()
+                
+                # Skip 'server: cloudflare' - that's expected and can't be changed
+                if header == "server" and header_value == "cloudflare":
+                    continue
+                
                 result["dangerous_headers"][header] = {
                     "value": headers_lower[header],
                     "reason": reason,

@@ -2,14 +2,15 @@
 """
 Security Monitor for waldo.click Infrastructure
 ================================================
-Runs security checks and generates consolidated reports for staging and production.
+Runs security checks and generates consolidated reports.
 
 Usage:
-    python monitor.py --env staging --dry-run
-    python monitor.py --env prod
+    python monitor.py
+    python monitor.py --dry-run
+    python monitor.py --quiet
 
 Cron example (Laravel Forge):
-    0 6 * * * cd /path/to/waldo-shield && /usr/bin/python3 src/monitor.py --env prod --quiet
+    0 6 * * * cd /path/to/waldo-shield/src && /usr/bin/python3 monitor.py --quiet
 
 Exit codes:
     0 - No critical/high issues found
@@ -17,10 +18,10 @@ Exit codes:
     2 - Error during execution (config, network, etc.)
 
 Environment Variables Required:
-    CLOUDFLARE_API_TOKEN       - Cloudflare API token (API Tokens, not Global API Key)
-    CLOUDFLARE_ZONE_ID_STAGING - Zone ID for staging environment
-    CLOUDFLARE_ZONE_ID_PROD    - Zone ID for production environment
-    MAILGUN_API_KEY            - Mailgun API key for email delivery
+    DOMAIN                 - Domain to scan (e.g., "waldo.click" or "waldoclick.dev")
+    CLOUDFLARE_API_TOKEN   - Cloudflare API token
+    CLOUDFLARE_ZONE_ID     - Cloudflare Zone ID for the domain
+    MAILGUN_API_KEY        - Mailgun API key for email delivery
 """
 
 import argparse
@@ -29,7 +30,7 @@ import sys
 from datetime import datetime, timezone
 
 from config import Config
-from scanner import scan as http_scan
+from modules.app_scanner import scan_all
 from modules.email_auth import analyze_domain
 from modules.cloudflare_api import collect_cloudflare_data
 from report import generate_report
@@ -44,13 +45,6 @@ def parse_args():
         description="Security monitor for waldo.click infrastructure",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
-    )
-    parser.add_argument(
-        "--env",
-        "-e",
-        choices=["staging", "prod"],
-        required=True,
-        help="Environment to monitor (staging or prod)",
     )
     parser.add_argument(
         "--dry-run",
@@ -85,41 +79,33 @@ def collect_all_data(config: Config) -> dict:
     Returns:
         Consolidated scan data dict
     """
-    logging.info(f"Starting scan for {config.environment} environment")
+    logging.info(f"Starting scan for {config.domain}")
     
-    # HTTP scan all targets
-    http_results = {}
-    for target in config.targets:
-        logging.info(f"Scanning {target}")
-        try:
-            http_results[target] = http_scan(target, ["headers", "ssl", "dns", "tech"])
-        except Exception as e:
-            logging.error(f"Failed to scan {target}: {e}")
-            http_results[target] = {"error": str(e), "all_issues": [], "risk_summary": {"score": 0, "issue_counts": {}}}
+    # Scan all apps (dashboard, api, www)
+    logging.info("Scanning apps...")
+    app_results = scan_all(config.domain)
     
-    # Email auth for domain (extract apex domain from first target)
-    # For waldo.click targets, the domain is waldo.click or waldoclick.dev
-    domain = config.mailgun_domain
-    logging.info(f"Checking email authentication for {domain}")
+    # Email auth for domain
+    logging.info(f"Checking email authentication for {config.domain}")
     try:
-        email_auth = {domain: analyze_domain(domain)}
+        email_auth = {config.domain: analyze_domain(config.domain)}
     except Exception as e:
-        logging.error(f"Failed to check email auth for {domain}: {e}")
-        email_auth = {domain: {"error": str(e), "issues": []}}
+        logging.error(f"Failed to check email auth: {e}")
+        email_auth = {config.domain: {"error": str(e), "issues": []}}
     
     # Cloudflare data
     logging.info("Collecting Cloudflare security data")
     try:
-        cloudflare = collect_cloudflare_data(config.cloudflare_token, config.zone_id)
+        cloudflare = collect_cloudflare_data(config.cloudflare_token, config.cloudflare_zone_id)
     except Exception as e:
         logging.error(f"Failed to collect Cloudflare data: {e}")
         cloudflare = {"error": str(e)}
     
     return {
+        "domain": config.domain,
         "environment": config.environment,
         "scan_date": datetime.now(timezone.utc).isoformat(),
-        "targets": config.targets,
-        "http_results": http_results,
+        "apps": app_results,
         "email_auth": email_auth,
         "cloudflare": cloudflare,
     }
@@ -134,12 +120,14 @@ def has_critical_or_high(scan_data: dict) -> bool:
     Returns:
         True if any critical or high severity issues found
     """
-    # Check HTTP results
-    for target, result in scan_data.get("http_results", {}).items():
-        if isinstance(result, dict) and "risk_summary" in result:
-            counts = result["risk_summary"].get("issue_counts", {})
-            if counts.get("critical", 0) > 0 or counts.get("high", 0) > 0:
-                return True
+    apps = scan_data.get("apps", {})
+    
+    for app_name in ["dashboard", "api", "www"]:
+        app_data = apps.get(app_name, {})
+        risk = app_data.get("risk_summary", {})
+        counts = risk.get("issue_counts", {})
+        if counts.get("critical", 0) > 0 or counts.get("high", 0) > 0:
+            return True
     
     # Check email auth issues
     for domain, auth in scan_data.get("email_auth", {}).items():
@@ -149,14 +137,34 @@ def has_critical_or_high(scan_data: dict) -> bool:
                 if severity in ("critical", "high", "error"):
                     return True
     
-    # Check Cloudflare (high security event count indicates issues)
-    cf = scan_data.get("cloudflare", {})
-    if isinstance(cf, dict):
-        events = cf.get("security_events", {})
-        if isinstance(events, dict) and events.get("total_events", 0) > 100:
-            return True
-    
     return False
+
+
+def print_summary(scan_data: dict) -> None:
+    """Print a summary of the scan results."""
+    domain = scan_data.get("domain", "unknown")
+    apps = scan_data.get("apps", {})
+    
+    print(f"\n{'='*60}")
+    print(f"  SCAN COMPLETE: {domain}")
+    print(f"{'='*60}")
+    
+    for app_name in ["dashboard", "api", "www"]:
+        app = apps.get(app_name, {})
+        risk = app.get("risk_summary", {})
+        level = risk.get("risk_level", "unknown").upper()
+        score = risk.get("score", 0)
+        total = risk.get("total_issues", 0)
+        
+        # Get critical count
+        counts = risk.get("issue_counts", {})
+        critical = counts.get("critical", 0)
+        high = counts.get("high", 0)
+        
+        status = "✓" if critical == 0 and high == 0 else "✗"
+        print(f"  {status} {app_name:12} | {level:8} | Score: {score:3} | Issues: {total}")
+    
+    print(f"{'='*60}\n")
 
 
 def main():
@@ -167,7 +175,7 @@ def main():
     setup_logging(verbose=not args.quiet)
     
     try:
-        config = Config.load(args.env)
+        config = Config.load()
     except EnvironmentError as e:
         print(f"Configuration error: {e}", file=sys.stderr)
         sys.exit(2)
@@ -175,7 +183,7 @@ def main():
         print(f"Unexpected error loading config: {e}", file=sys.stderr)
         sys.exit(2)
     
-    logging.info(f"Loaded {config.environment} config with {len(config.targets)} targets")
+    logging.info(f"Loaded config for {config.domain}")
     
     try:
         # Collect data from all sources
@@ -192,6 +200,10 @@ def main():
         # Save current scan
         saved_path = save_scan(config.environment, scan_data)
         logging.info(f"Scan saved to {saved_path}")
+        
+        # Print summary unless quiet
+        if not args.quiet:
+            print_summary(scan_data)
         
         # Send email (unless dry-run or threshold not met)
         if args.dry_run:
@@ -222,6 +234,8 @@ def main():
             
     except Exception as e:
         logging.error(f"Scan failed: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(2)
 
 

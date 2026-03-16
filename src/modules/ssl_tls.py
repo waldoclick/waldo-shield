@@ -126,29 +126,13 @@ def analyze(url: str) -> dict:
                         days_left = (expiry_date - now).days
                         result["days_until_expiry"] = days_left
 
+                        # Only alert if certificate has expired
+                        # Cloudflare auto-renews, so don't warn about upcoming expiry
                         if days_left < 0:
                             result["issues"].append({
                                 "severity": "critical",
                                 "message": f"SSL certificate has EXPIRED {abs(days_left)} days ago.",
                                 "recommendation": "Renew the SSL certificate immediately.",
-                            })
-                        elif days_left < 14:
-                            result["issues"].append({
-                                "severity": "critical",
-                                "message": f"SSL certificate expires in {days_left} days.",
-                                "recommendation": "Renew the SSL certificate urgently.",
-                            })
-                        elif days_left < 30:
-                            result["issues"].append({
-                                "severity": "high",
-                                "message": f"SSL certificate expires in {days_left} days.",
-                                "recommendation": "Plan certificate renewal soon.",
-                            })
-                        elif days_left < 90:
-                            result["issues"].append({
-                                "severity": "medium",
-                                "message": f"SSL certificate expires in {days_left} days.",
-                                "recommendation": "Schedule certificate renewal.",
                             })
 
                     # Hostname validation
