@@ -126,10 +126,10 @@ def analyze(url: str) -> dict:
     parsed = urlparse(url)
     domain = parsed.hostname or url
 
-    # Strip www for apex domain checks
-    apex_domain = domain
-    if apex_domain.startswith("www."):
-        apex_domain = apex_domain[4:]
+    # Get apex domain (strip any subdomain) for SPF/DMARC/CAA/DNSSEC checks
+    # e.g. api.waldoclick.dev -> waldoclick.dev, www.waldo.click -> waldo.click
+    parts = domain.split(".")
+    apex_domain = ".".join(parts[-2:]) if len(parts) > 2 else domain
 
     result = {
         "module": "dns_analysis",
