@@ -298,3 +298,137 @@ class TestAggregation:
         # Total issues: 4 (api) + 3 (www) + 1 (email) = 8
         # Should show some form of total in the HTML
         assert "All Issues" in html
+
+
+class TestHTMLStructure:
+    """Integration tests for HTML structure validation."""
+
+    def test_html_structure(self, full_report_data):
+        """Test that generated HTML has valid structure and all required sections."""
+        import re
+        import os
+        from report.generator import generate_report
+
+        html = generate_report(full_report_data)
+
+        # 1. Validate HTML structure
+        assert "<!DOCTYPE html>" in html
+        assert "<html" in html and "</html>" in html
+        assert "<head>" in html and "</head>" in html
+        assert "<body" in html and "</body>" in html
+        assert "<title>" in html
+
+        # 2. Check for required sections
+        required_sections = [
+            "Executive Summary",
+            "HTTP Scanner Findings",
+            "Email Security",
+            "Cloudflare Security",
+            "All Issues",
+        ]
+        for section in required_sections:
+            assert section in html, f"Missing section: {section}"
+
+        # 3. Check all severity colors are present (at least in styles)
+        severity_colors = ["#dc3545", "#fd7e14", "#ffc107", "#17a2b8", "#6c757d"]
+        for color in severity_colors:
+            assert color in html, f"Missing severity color: {color}"
+
+        # 4. Check no unclosed table tags (simple validation)
+        table_opens = html.count("<table")
+        table_closes = html.count("</table>")
+        assert table_opens == table_closes, f"Mismatched table tags: {table_opens} opens, {table_closes} closes"
+
+        # 5. Write sample output for manual inspection
+        reports_dir = os.path.join(os.path.dirname(__file__), "..", "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        sample_path = os.path.join(reports_dir, "sample_report.html")
+        with open(sample_path, "w") as f:
+            f.write(html)
+
+        assert os.path.exists(sample_path), "Sample report file not created"
+        assert os.path.getsize(sample_path) > 1000, "Sample report is too small"
+
+    def test_sections_in_correct_order(self, full_report_data):
+        """Test that sections appear in the expected order."""
+        from report.generator import generate_report
+
+        html = generate_report(full_report_data)
+
+        # Sections should appear in this order
+        sections = [
+            "Executive Summary",
+            "HTTP Scanner Findings",
+            "Email Security",
+            "Cloudflare Security",
+            "All Issues",
+        ]
+
+        positions = [html.find(section) for section in sections]
+        # All sections should be found
+        assert all(pos >= 0 for pos in positions), "Not all sections found"
+        # Positions should be in increasing order
+        assert positions == sorted(positions), f"Sections out of order: {list(zip(sections, positions))}"
+
+    def test_data_assembly_from_modules(self):
+        """Test that data can be assembled from module outputs (mocked Config context)."""
+        from report.generator import generate_report
+
+        # Simulate data assembly as it would happen in monitor.py
+        data = {
+            "environment": "staging",
+            "scan_date": "2026-03-16T15:00:00Z",
+            "targets": [
+                "https://api.waldoclick.dev",
+                "https://dashboard.waldoclick.dev",
+                "https://www.waldoclick.dev",
+            ],
+            "http_results": {
+                "https://api.waldoclick.dev": {
+                    "meta": {"url": "https://api.waldoclick.dev"},
+                    "risk_summary": {
+                        "score": 5,
+                        "risk_level": "low",
+                        "issue_counts": {"critical": 0, "high": 0, "medium": 0, "low": 1, "info": 1},
+                        "total_issues": 2,
+                    },
+                    "all_issues": [
+                        {"severity": "low", "message": "Server header exposed", "source_module": "http_headers"},
+                        {"severity": "info", "message": "HTTP/2 enabled", "source_module": "http_headers"},
+                    ],
+                },
+            },
+            "email_auth": {
+                "waldoclick.dev": {
+                    "domain": "waldoclick.dev",
+                    "spf": {"record": "v=spf1 ...", "valid": True, "dns_lookups": 5},
+                    "dkim": {"selectors": {"mailgun": True}},
+                    "dmarc": {"record": "v=DMARC1; p=reject", "policy": "reject", "valid": True},
+                    "caa": {"records": ["0 issue \"pki.goog\""], "expected_ca": "pki.goog", "valid": True},
+                    "issues": [],
+                },
+            },
+            "cloudflare": {
+                "security_events": {
+                    "zone_id": "test123",
+                    "total_events": 50,
+                    "by_action": {"block": 30, "challenge": 20},
+                    "by_source": {"waf": 50},
+                },
+                "traffic_analytics": {
+                    "total_requests": 10000,
+                    "blocked_requests": 100,
+                    "blocked_percentage": 1.0,
+                },
+                "rate_limit_rules": [],
+            },
+        }
+
+        html = generate_report(data)
+
+        # Basic validation
+        assert "staging" in html
+        assert "api.waldoclick.dev" in html
+        assert "waldoclick.dev" in html
+        assert "50" in html  # WAF total events
+        assert "SPF" in html and "DMARC" in html
