@@ -24,7 +24,7 @@ def _test_open_redirect(base_url: str, session: requests.Session) -> list:
                 test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{param}={payload}"
                 resp = session.get(test_url, timeout=5, allow_redirects=False)
                 location = resp.headers.get("location", "")
-                if "evil.com" in location:
+                if "evil.com" in location and not any(i in location for i in ZERO_TRUST_INDICATORS):
                     issues.append({
                         "severity": "high",
                         "message": f"Potential open redirect via parameter '{param}': {test_url}",
@@ -58,13 +58,54 @@ def _test_directory_listing(base_url: str, session: requests.Session) -> list:
     return issues
 
 
+ZERO_TRUST_INDICATORS = [
+    "cloudflareaccess.com",
+    "cdn-cgi/access",
+    "CF_AppSession",
+]
+
+# Content signatures that confirm a file is real (not a CMS 404)
+CONTENT_SIGNATURES = {
+    "/.git/HEAD": ["ref: refs/", "HEAD"],
+    "/.env": ["DB_", "APP_KEY", "SECRET", "PASSWORD", "TOKEN", "API_KEY"],
+    "/phpinfo.php": ["phpinfo()", "PHP Version", "<table>"],
+    "/.htaccess": ["RewriteEngine", "RewriteRule", "Options", "AuthType"],
+    "/server-status": ["Apache Server Status", "Server Version", "requests/sec"],
+    "/server-info": ["Apache Server Information", "Server Settings", "Module Name"],
+    "/web.config": ["<configuration>", "<system.web>", "connectionStrings"],
+    "/config.php": ["<?php", "define(", "DB_HOST", "mysql_connect"],
+    "/wp-config.php.bak": ["DB_NAME", "DB_USER", "DB_PASSWORD", "table_prefix"],
+    "/database.yml": ["adapter:", "database:", "username:", "password:"],
+    "/Dockerfile": ["FROM ", "RUN ", "EXPOSE ", "CMD "],
+    "/docker-compose.yml": ["version:", "services:", "image:", "ports:"],
+    "/.DS_Store": ["Bud1"],  # DS_Store binary signature
+}
+
+
+def _is_zero_trust_redirect(resp: requests.Response) -> bool:
+    """Detect if a response is a Cloudflare Zero Trust redirect."""
+    if resp.status_code in (301, 302, 303, 307, 308):
+        location = resp.headers.get("location", "")
+        return any(indicator in location for indicator in ZERO_TRUST_INDICATORS)
+    return False
+
+
+def _is_real_sensitive_content(path: str, resp: requests.Response) -> bool:
+    """Check if the response actually contains the expected sensitive content."""
+    if path not in CONTENT_SIGNATURES:
+        return True  # No signature check for this path, trust the 200
+    content = resp.text[:2000]  # Only check first 2KB
+    signatures = CONTENT_SIGNATURES[path]
+    return any(sig.lower() in content.lower() for sig in signatures)
+
+
 def _test_sensitive_files(base_url: str, session: requests.Session) -> list:
     issues = []
     sensitive_paths = [
         ("/.git/HEAD", "Git repository exposed"),
         ("/.env", ".env file with secrets possibly exposed"),
         ("/robots.txt", "robots.txt may reveal hidden paths"),
-        ("/sitemap.xml", "sitemap.xml available (informational)"),
+        ("/sitemap.xml", "sitemap.xml publicly accessible (informational)"),
         ("/.htaccess", ".htaccess file exposed"),
         ("/phpinfo.php", "PHP info page exposed"),
         ("/server-status", "Apache server-status exposed"),
@@ -82,9 +123,28 @@ def _test_sensitive_files(base_url: str, session: requests.Session) -> list:
     for path, description in sensitive_paths:
         try:
             url = f"{parsed.scheme}://{parsed.netloc}{path}"
-            resp = session.get(url, timeout=5)
+            resp = session.get(url, timeout=5, allow_redirects=False)
+
+            # Skip Zero Trust redirects
+            if _is_zero_trust_redirect(resp):
+                continue
+
+            # Follow non-ZT redirects
+            if resp.status_code in (301, 302, 303, 307, 308):
+                location = resp.headers.get("location", "")
+                if location:
+                    resp = session.get(location, timeout=5, allow_redirects=False)
+
             if resp.status_code == 200:
-                severity = "critical" if path in ["/.git/HEAD", "/.env", "/phpinfo.php"] else "medium"
+                # Verify the response actually contains sensitive content
+                if not _is_real_sensitive_content(path, resp):
+                    continue
+                if path in ["/.git/HEAD", "/.env", "/phpinfo.php"]:
+                    severity = "critical"
+                elif path in ["/sitemap.xml"]:
+                    severity = "info"
+                else:
+                    severity = "medium"
                 issues.append({
                     "severity": severity,
                     "message": f"Sensitive file accessible at {url} (HTTP 200): {description}",
